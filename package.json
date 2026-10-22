@@ -1,0 +1,31 @@
+{
+  "name": "la-malediction",
+  "version": "1.0.0",
+  "description": "Assistant du MJ pour La Malédiction (loup-garou maison)",
+  "scripts": {
+    "test": "vitest run",
+    "cli": "tsx src/cli/main.ts",
+    "typecheck": "tsc",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Json-sbenjs/la-malediction.git"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Json-sbenjs/la-malediction/issues"
+  },
+  "homepage": "https://github.com/Json-sbenjs/la-malediction#readme",
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "type": "module",
+  "private": true
+}
