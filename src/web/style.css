@@ -1,0 +1,119 @@
+:root {
+  --fond: #14121c;
+  --surface: #211d2e;
+  --surface-2: #2c2740;
+  --texte: #ece8f5;
+  --texte-doux: #a9a2bd;
+  --accent: #b48cff;
+  --pelerins: #5aa9e6;
+  --spectres: #e5616a;
+  --trinite: #f2b84b;
+  --ok: #6fd08c;
+  --rayon: 12px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 17px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2 { margin: 0 0 .5rem; }
+h2 { font-size: 1.15rem; }
+
+button {
+  font: inherit;
+  color: var(--texte);
+  background: var(--surface-2);
+  border: 1px solid #3d3656;
+  border-radius: var(--rayon);
+  padding: .7rem 1rem;
+  min-height: 48px;
+  cursor: pointer;
+  margin: .25rem .25rem .25rem 0;
+}
+button.principal { background: var(--accent); color: #1a1428; border-color: transparent; font-weight: 600; }
+button.actif { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+button.discret { background: transparent; min-height: 40px; padding: .4rem .8rem; }
+button:disabled { opacity: .4; cursor: default; }
+
+/* ── Écran de choix ─────────────────────────────── */
+.choix { max-width: 760px; margin: 0 auto; padding: 2rem 16px 3rem; }
+.sous-titre { color: var(--texte-doux); margin-top: 0; }
+.carte { background: var(--surface); border-radius: var(--rayon); padding: 1rem; margin: 1rem 0; }
+.choix-ligne { display: flex; flex-wrap: wrap; }
+.prenoms { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .5rem; }
+.prenom { display: flex; align-items: center; gap: .5rem; }
+.prenom span { width: 2ch; text-align: right; color: var(--texte-doux); }
+.prenom input {
+  flex: 1; min-width: 0; font: inherit; color: var(--texte); background: var(--surface-2);
+  border: 1px solid #3d3656; border-radius: 8px; padding: .55rem .6rem;
+}
+.note { background: #3a2f12; color: #f6dc9c; padding: .6rem .8rem; border-radius: var(--rayon); }
+
+/* ── Partie ─────────────────────────────────────── */
+.barre {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .5rem 16px; background: var(--surface); position: sticky; top: 0; z-index: 2;
+}
+.phase { font-weight: 700; font-size: 1.1rem; }
+
+.partie { display: grid; gap: 1rem; padding: 1rem 16px 2rem; }
+@media (min-width: 900px) {
+  .partie { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; }
+  .panneau { position: sticky; top: 4rem; }
+}
+
+.salle {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: radial-gradient(ellipse at center, #2a2440 0%, var(--surface) 70%);
+  border-radius: 24px;
+  container-type: inline-size;
+}
+
+.siege {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: clamp(48px, 12cqi, 96px);
+  min-height: 0;
+  margin: 0;
+  padding: .3rem .2rem;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  font-size: clamp(10px, 1.7cqi, 13px);
+  line-height: 1.15;
+  border-width: 2px;
+  opacity: .75;
+}
+.siege .num { font-weight: 700; font-size: 1.25em; }
+.siege .nom { font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.siege .role { color: var(--texte-doux); }
+.siege .badges:empty, .siege .nom:empty { display: none; }
+.siege .fleche, .siege .voix {
+  position: absolute; font-size: 11px; padding: 1px 5px; border-radius: 8px; white-space: nowrap;
+}
+.siege .fleche { bottom: -10px; background: var(--accent); color: #1a1428; }
+.siege .voix { top: -10px; background: var(--spectres); color: #fff; }
+
+.siege.camp-pelerins { border-color: var(--pelerins); }
+.siege.camp-spectres { border-color: var(--spectres); }
+.siege.camp-trinite { border-color: var(--trinite); }
+.siege.actif { opacity: 1; cursor: pointer; }
+.siege.acteur { opacity: 1; box-shadow: 0 0 0 3px var(--ok); }
+.siege.choisi { opacity: 1; background: var(--accent); color: #1a1428; }
+.siege.choisi .role { color: #1a1428; }
+.siege.mort { opacity: .35; filter: grayscale(1); }
+
+.panneau { background: var(--surface); border-radius: var(--rayon); padding: 1rem; }
+.consigne { font-size: 1.1rem; }
+.qui { color: var(--texte-doux); }
+.info { background: #183326; color: #bdf0cc; padding: .6rem .8rem; border-radius: var(--rayon); }
+.erreur { background: #3c1a1f; color: #ffc2c7; padding: .6rem .8rem; border-radius: var(--rayon); }
+.victoire { font-size: 1.4rem; font-weight: 700; }
+.classement { padding-left: 1.2rem; }

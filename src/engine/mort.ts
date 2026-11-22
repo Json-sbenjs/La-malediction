@@ -7,11 +7,25 @@ function memoireNeuve(): Joueur['memoire'] {
   return { pouvoirUtilise: false, pouvoirPerdu: false, derniereCible: null, lien: null };
 }
 
-/** L'Adepte hérite du rôle de son mentor, pouvoirs remis à neuf, sans la mémoire. */
+/**
+ * L'Adepte hérite du rôle de son mentor, pouvoirs remis à neuf, sans la mémoire.
+ * Il prend aussi le camp du mentor (Spectres si le mentor était Spectre).
+ */
 function heriter(adepte: Joueur, mentor: Joueur): void {
   adepte.role = mentor.role;
-  adepte.camp = mentor.camp === 'spectres' ? 'spectres' : ROLES[mentor.role].camp;
+  adepte.camp = mentor.camp;
   adepte.memoire = memoireNeuve();
+}
+
+/**
+ * Trinité : dès qu'un membre meurt, le camp Solitaire se dissout.
+ * Les survivants (et le mort) basculent chez les Pèlerins.
+ */
+function dissoudreTrinite(etat: EtatPartie, mort: Joueur): void {
+  if (mort.camp !== 'trinite') return;
+  for (const j of etat.joueurs) {
+    if (j.camp === 'trinite') j.camp = 'pelerins';
+  }
 }
 
 /** Effets liés au rôle du mort (sautés si l'Usurpateur lui prend son rôle). */
@@ -32,6 +46,7 @@ export function tuer(etat: EtatPartie, id: JoueurId): void {
   mort.revele = true;
 
   // Effets automatiques
+  dissoudreTrinite(etat, mort);
   for (const j of vivants(etat)) {
     if (j.memoire.lien !== id) continue;
     if (j.role === 'anatheme') j.camp = 'spectres';

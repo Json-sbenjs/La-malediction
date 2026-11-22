@@ -47,9 +47,10 @@ describe('Anathème', () => {
   const PLAN = planDeTest(['anatheme', 'spectre', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin']);
 
   it('si son modèle meurt, il bascule chez les Spectres et se réveille avec eux', () => {
-    let etat = creerPartie(PLAN);
-    etat.joueurs[0].memoire.lien = 3; // modèle = siège 3 (choisi en première nuit, semaine 4)
-    etat = finirNuit(etat, { spectre: { type: 'spectres-attaquer', cible: 3 } });
+    let etat = finirNuit(creerPartie(PLAN), {
+      anatheme: { type: 'anatheme-choisir-modele', cible: 3 },
+      spectre: { type: 'spectres-attaquer', cible: 3 },
+    });
     expect(etat.joueurs[0].camp).toBe('spectres');
 
     etat = appliquer(etat, { type: 'elire-alpha', cible: 4 });
@@ -58,9 +59,10 @@ describe('Anathème', () => {
   });
 
   it("sinon il reste Pèlerin", () => {
-    let etat = creerPartie(PLAN);
-    etat.joueurs[0].memoire.lien = 3;
-    etat = finirNuit(etat, { spectre: { type: 'spectres-attaquer', cible: 4 } });
+    const etat = finirNuit(creerPartie(PLAN), {
+      anatheme: { type: 'anatheme-choisir-modele', cible: 3 },
+      spectre: { type: 'spectres-attaquer', cible: 4 },
+    });
     expect(etat.joueurs[0].camp).toBe('pelerins');
   });
 });
@@ -68,10 +70,16 @@ describe('Anathème', () => {
 describe('Adepte', () => {
   it('hérite du rôle de son mentor, pouvoirs remis à neuf', () => {
     const plan = planDeTest(['adepte', 'spectre', 'sainte', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin']);
-    let etat = creerPartie(plan);
-    etat.joueurs[0].memoire.lien = 3;
-    etat.joueurs[2].memoire.pouvoirUtilise = true;
-    etat = finirNuit(etat, { spectre: { type: 'spectres-attaquer', cible: 3 } });
+    let etat = finirNuit(creerPartie(plan), {
+      adepte: { type: 'adepte-choisir-mentor', cible: 3 },
+      spectre: { type: 'spectres-attaquer', cible: 4 },
+      sainte: { type: 'sainte-sauver', utiliser: true },
+    });
+    // Nuit 1 : la Sainte sauve le siège 4 → sa potion est utilisée.
+    expect(etat.joueurs[3].vivant).toBe(true);
+    expect(etat.joueurs[2].memoire.pouvoirUtilise).toBe(true);
+    etat = appliquer(etat, { type: 'elire-alpha', cible: 5 });
+    etat = appliquer(etat, { type: 'vote', votes: { 4: 3, 5: 3 } }); // la Sainte (mentor) meurt
     expect(etat.joueurs[0]).toMatchObject({ role: 'sainte', camp: 'pelerins' });
     expect(etat.joueurs[0].memoire.pouvoirUtilise).toBe(false);
   });
@@ -79,7 +87,7 @@ describe('Adepte', () => {
   it('si le mentor était un Spectre, il bascule chez les Spectres', () => {
     const plan = planDeTest(['adepte', 'spectre', 'spectre', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin']);
     let etat = creerPartie(plan);
-    etat.joueurs[0].memoire.lien = 2;
+    etat = appliquer(etat, { type: 'adepte-choisir-mentor', cible: 2 });
     etat = auVote(etat, 4);
     etat = appliquer(etat, { type: 'vote', votes: { 4: 2, 5: 2 } });
     expect(etat.joueurs[0]).toMatchObject({ role: 'spectre', camp: 'spectres' });

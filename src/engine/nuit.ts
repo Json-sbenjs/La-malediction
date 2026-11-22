@@ -1,4 +1,5 @@
 import { nomJoueur, trouverJoueur, verifierCible, vivants } from './outils';
+import { CHOIX_OBLIGATOIRE, choisirLien, ciblesPremiereNuit, reconnaissance } from './premiere-nuit';
 import { mortsDeLaNuit, resoudreNuit } from './resolution-nuit';
 import { ROLES, rolesQuiSeReveillent } from './roles';
 import type { Action, Etape, EtatPartie, JoueurId, RoleId } from './types';
@@ -15,6 +16,7 @@ const ACTION_DU_ROLE: Partial<Record<RoleId, Action['type']>> = {
   spectre: 'spectres-attaquer',
   sainte: 'sainte-sauver',
   vipere: 'vipere-empoisonner',
+  ...CHOIX_OBLIGATOIRE,
 };
 
 /** Ordre de réveil de la nuit : seulement les rôles présents dans la partie. */
@@ -71,6 +73,11 @@ export function ciblesPossibles(etat: EtatPartie, role: RoleId, numero: number):
     case 'instinct':
     case 'vipere':
       return saufActeurs.map((j) => j.id);
+    case 'anatheme':
+    case 'adepte':
+      return ciblesPremiereNuit(etat, quiAgit);
+    case 'trinite':
+      return [];
     default:
       return enVie.map((j) => j.id);
   }
@@ -126,6 +133,9 @@ export function appliquerNuit(etat: EtatPartie, phase: PhaseNuit, action: Action
   const attendue = ACTION_DU_ROLE[etape.role];
   if (action.type !== 'passer' && action.type !== attendue) {
     throw new Error(`Action « ${action.type} » impossible : c'est au tour de ${nomRole}`);
+  }
+  if (action.type === 'passer' && CHOIX_OBLIGATOIRE[etape.role]) {
+    throw new Error(`${nomRole} doit faire son choix`);
   }
 
   const suivant: EtatPartie = structuredClone(etat);
@@ -190,7 +200,15 @@ export function appliquerNuit(etat: EtatPartie, phase: PhaseNuit, action: Action
       acteur.memoire.pouvoirUtilise = true;
       break;
 
+    case 'anatheme-choisir-modele':
+    case 'adepte-choisir-mentor':
+      viser(action.cible);
+      suivant.infoMJ = choisirLien(suivant, acteur, action.cible);
+      break;
+
     case 'passer':
+      // Reconnaissance (Trinité) : le MJ a montré les membres, on continue.
+      if (etape.role === 'trinite') suivant.infoMJ = `Trinité : ${reconnaissance(suivant, etape.acteurs)}`;
       break;
   }
 
