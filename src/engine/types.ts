@@ -77,7 +77,17 @@ export interface Joueur {
 export type Phase =
   | { type: 'nuit'; numero: number; etape: number }
   | { type: 'jour'; numero: number }
-  | { type: 'fin'; gagnants: Camp };
+  /** gagnants = null : tout le monde est mort, personne ne gagne. */
+  | { type: 'fin'; gagnants: Camp | null };
+
+/**
+ * Choix que le MJ doit faire suite à une mort, avant de continuer la partie.
+ * Elles sont traitées dans l'ordre (file d'attente).
+ */
+export type Decision =
+  | { type: 'usurpateur'; usurpateur: JoueurId; mort: JoueurId }
+  | { type: 'main-noire'; tireur: JoueurId }
+  | { type: 'alpha-successeur'; ancien: JoueurId };
 
 export interface EtatPartie {
   /** Identifiant du plan de salle utilisé. */
@@ -88,6 +98,12 @@ export interface EtatPartie {
   alpha: JoueurId | null;
   /** Victime désignée par les Spectres pendant la nuit en cours. */
   victimeSpectres: JoueurId | null;
+  /** La Sainte a utilisé sa potion de guérison cette nuit. */
+  sauveeParSainte: boolean;
+  /** Joueur empoisonné par la Vipère cette nuit. */
+  empoisonne: JoueurId | null;
+  /** Choix en attente suite à des morts (prioritaires sur tout le reste). */
+  decisions: Decision[];
   /** Info à transmettre en secret par le MJ (résultat de l'Oracle, de l'Instinct…). */
   infoMJ: string | null;
 }
@@ -102,9 +118,13 @@ export type Etape =
       /** Joueurs qu'ils ont le droit de viser. */
       ciblesPossibles: JoueurId[];
     }
-  | { type: 'resolution-nuit'; numero: number }
-  | { type: 'jour'; numero: number }
-  | { type: 'fin'; gagnants: Camp };
+  /** Fin de nuit : le MJ voit qui meurt, puis valide avec `passer`. */
+  | { type: 'resolution-nuit'; numero: number; morts: JoueurId[] }
+  /** Un choix lié à une mort (Usurpateur, Main Noire, successeur de l'Alpha). */
+  | { type: 'decision'; decision: Decision; ciblesPossibles: JoueurId[] }
+  | { type: 'election-alpha'; numero: number; candidats: JoueurId[] }
+  | { type: 'vote'; numero: number; votants: JoueurId[]; ciblesPossibles: JoueurId[]; alpha: JoueurId }
+  | { type: 'fin'; gagnants: Camp | null };
 
 /**
  * Ce que le MJ peut faire. Union discriminée sur `type` :
@@ -130,5 +150,5 @@ export type Action =
   | { type: 'main-noire-tirer'; cible: JoueurId }
   | { type: 'alpha-successeur'; cible: JoueurId }
   | { type: 'usurpateur-remplacer'; cible: JoueurId | null }
-  // Général
+  // Général : ne rien faire, ou valider l'étape (ex. résolution de la nuit)
   | { type: 'passer' };

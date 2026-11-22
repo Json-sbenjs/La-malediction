@@ -56,7 +56,7 @@ describe('« si en vie » / « si occupé »', () => {
     const plan = planDeTest(['courtisane', 'spectre', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin']);
     let etat = creerPartie(plan);
     etat = appliquer(etat, { type: 'courtisane-occuper', cible: 2 });
-    expect(etapeSuivante(etat)).toEqual({ type: 'resolution-nuit', numero: 1 });
+    expect(etapeSuivante(etat)).toMatchObject({ type: 'resolution-nuit', numero: 1 });
   });
 });
 
@@ -129,7 +129,7 @@ describe('rôles de nuit', () => {
     expect(() => appliquer(etat, { type: 'spectres-attaquer', cible: 6 })).toThrow();
     etat = appliquer(etat, { type: 'spectres-attaquer', cible: 9 });
     expect(etat.victimeSpectres).toBe(9);
-    expect(etapeSuivante(etat)).toEqual({ type: 'resolution-nuit', numero: 1 });
+    expect(etapeSuivante(etat)).toMatchObject({ type: 'resolution-nuit', numero: 1 });
   });
 
   it("refuse l'action d'un autre rôle que celui réveillé", () => {

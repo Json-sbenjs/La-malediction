@@ -1,5 +1,7 @@
+import { nomJoueur, trouverJoueur, verifierCible, vivants } from './outils';
+import { mortsDeLaNuit, resoudreNuit } from './resolution-nuit';
 import { ROLES, rolesQuiSeReveillent } from './roles';
-import type { Action, Etape, EtatPartie, Joueur, JoueurId, RoleId } from './types';
+import type { Action, Etape, EtatPartie, JoueurId, RoleId } from './types';
 
 type EtapeReveil = Extract<Etape, { type: 'reveil' }>;
 type PhaseNuit = Extract<EtatPartie['phase'], { type: 'nuit' }>;
@@ -11,12 +13,9 @@ const ACTION_DU_ROLE: Partial<Record<RoleId, Action['type']>> = {
   oracle: 'oracle-voir',
   instinct: 'instinct-designer',
   spectre: 'spectres-attaquer',
+  sainte: 'sainte-sauver',
+  vipere: 'vipere-empoisonner',
 };
-
-/** « Paul (siège 3) » ou « siège 3 ». */
-export function nomJoueur(joueur: Joueur): string {
-  return joueur.nom ? `${joueur.nom} (siège ${joueur.id})` : `siège ${joueur.id}`;
-}
 
 /** Ordre de réveil de la nuit : seulement les rôles présents dans la partie. */
 export function ordreDeNuit(etat: EtatPartie, numero: number): RoleId[] {
@@ -26,14 +25,16 @@ export function ordreDeNuit(etat: EtatPartie, numero: number): RoleId[] {
     .filter((id) => presents.has(id));
 }
 
-/** « si en vie » → « si occupé » → pouvoir encore disponible. */
+/**
+ * « si en vie » → « si occupé » → pouvoir encore disponible.
+ * Les Spectres : tous les vivants du camp Spectres (Anathème basculé compris).
+ */
 export function acteurs(etat: EtatPartie, role: RoleId): JoueurId[] {
   const unique = ROLES[role].usageUnique;
-  return etat.joueurs
+  return vivants(etat)
     .filter(
       (j) =>
-        j.role === role &&
-        j.vivant &&
+        (role === 'spectre' ? j.camp === 'spectres' : j.role === role) &&
         !j.statuts.occupe &&
         !j.memoire.pouvoirPerdu &&
         !(unique && j.memoire.pouvoirUtilise),
@@ -44,7 +45,8 @@ export function acteurs(etat: EtatPartie, role: RoleId): JoueurId[] {
 /** Qui le rôle a le droit de viser cette nuit. */
 export function ciblesPossibles(etat: EtatPartie, role: RoleId, numero: number): JoueurId[] {
   const quiAgit = acteurs(etat, role);
-  const vivants = etat.joueurs.filter((j) => j.vivant);
+  const enVie = vivants(etat);
+  const saufActeurs = enVie.filter((j) => !quiAgit.includes(j.id));
   const ciblePrecedente = (): JoueurId | null => {
     const acteur = etat.joueurs.find((j) => j.id === quiAgit[0]);
     const derniere = acteur?.memoire.derniereCible;
@@ -53,26 +55,30 @@ export function ciblesPossibles(etat: EtatPartie, role: RoleId, numero: number):
 
   switch (role) {
     case 'spectre':
-      return vivants.filter((j) => j.role !== 'spectre').map((j) => j.id);
+      return enVie.filter((j) => j.camp !== 'spectres').map((j) => j.id);
     case 'courtisane': {
       const interdite = ciblePrecedente();
-      return vivants.filter((j) => !quiAgit.includes(j.id) && j.id !== interdite).map((j) => j.id);
+      return saufActeurs.filter((j) => j.id !== interdite).map((j) => j.id);
     }
     case 'protecteur': {
       const interdite = ciblePrecedente();
-      return vivants.filter((j) => j.id !== interdite).map((j) => j.id);
+      return enVie.filter((j) => j.id !== interdite).map((j) => j.id);
     }
+    case 'sainte':
+      // La Sainte ne peut sauver que la victime des Spectres.
+      return etat.victimeSpectres === null ? [] : [etat.victimeSpectres];
     case 'oracle':
     case 'instinct':
-      return vivants.filter((j) => !quiAgit.includes(j.id)).map((j) => j.id);
+    case 'vipere':
+      return saufActeurs.map((j) => j.id);
     default:
-      return vivants.map((j) => j.id);
+      return enVie.map((j) => j.id);
   }
 }
 
 /**
  * Cherche la prochaine étape de la nuit à partir de `phase.etape`.
- * Un rôle sans acteur (mort, occupé, pouvoir perdu) est sauté.
+ * Un rôle sans acteur (mort, occupé, pouvoir perdu ou déjà utilisé) est sauté.
  */
 function trouverEtape(etat: EtatPartie, phase: PhaseNuit): { index: number; etape: EtapeReveil } | null {
   const ordre = ordreDeNuit(etat, phase.numero);
@@ -90,7 +96,9 @@ function trouverEtape(etat: EtatPartie, phase: PhaseNuit): { index: number; etap
 }
 
 export function etapeNuit(etat: EtatPartie, phase: PhaseNuit): Etape {
-  return trouverEtape(etat, phase)?.etape ?? { type: 'resolution-nuit', numero: phase.numero };
+  return (
+    trouverEtape(etat, phase)?.etape ?? { type: 'resolution-nuit', numero: phase.numero, morts: mortsDeLaNuit(etat) }
+  );
 }
 
 /** Remet à zéro ce qui ne dure qu'une nuit et repart du premier rôle. */
@@ -100,53 +108,48 @@ export function debutDeNuit(etat: EtatPartie, numero: number): EtatPartie {
     joueurs: etat.joueurs.map((j) => ({ ...j, statuts: { occupe: false, protege: false } })),
     phase: { type: 'nuit', numero, etape: 0 },
     victimeSpectres: null,
+    sauveeParSainte: false,
+    empoisonne: null,
     infoMJ: null,
   };
-}
-
-function verifierCible(etape: EtapeReveil, cible: JoueurId): void {
-  if (!etape.ciblesPossibles.includes(cible)) {
-    throw new Error(`${ROLES[etape.role].nom} ne peut pas viser le siège ${cible}`);
-  }
 }
 
 /** Applique l'action du MJ pour le rôle réveillé. Ne modifie pas `etat` : renvoie un nouvel état. */
 export function appliquerNuit(etat: EtatPartie, phase: PhaseNuit, action: Action): EtatPartie {
   const trouve = trouverEtape(etat, phase);
   if (!trouve) {
-    throw new Error('Résolution de la nuit : pas encore codée (semaine 3)');
+    if (action.type !== 'passer') throw new Error('Fin de nuit : valider la résolution avec « passer »');
+    return resoudreNuit(etat, phase.numero);
   }
   const { index, etape } = trouve;
+  const nomRole = ROLES[etape.role].nom;
   const attendue = ACTION_DU_ROLE[etape.role];
   if (action.type !== 'passer' && action.type !== attendue) {
-    throw new Error(`Action « ${action.type} » impossible : c'est au tour de ${ROLES[etape.role].nom}`);
+    throw new Error(`Action « ${action.type} » impossible : c'est au tour de ${nomRole}`);
   }
 
   const suivant: EtatPartie = structuredClone(etat);
   suivant.phase = { ...phase, etape: index + 1 };
   suivant.infoMJ = null;
-  const joueur = (id: JoueurId): Joueur => {
-    const j = suivant.joueurs.find((x) => x.id === id);
-    if (!j) throw new Error(`Siège ${id} inconnu`);
-    return j;
-  };
+  const joueur = (id: JoueurId) => trouverJoueur(suivant, id);
   const acteur = joueur(etape.acteurs[0]);
+  const viser = (cible: JoueurId) => verifierCible(etape.ciblesPossibles, cible, nomRole);
 
   switch (action.type) {
     case 'courtisane-occuper':
-      verifierCible(etape, action.cible);
+      viser(action.cible);
       joueur(action.cible).statuts.occupe = true;
       acteur.memoire.derniereCible = { nuit: phase.numero, cible: action.cible };
       break;
 
     case 'protecteur-proteger':
-      verifierCible(etape, action.cible);
+      viser(action.cible);
       joueur(action.cible).statuts.protege = true;
       acteur.memoire.derniereCible = { nuit: phase.numero, cible: action.cible };
       break;
 
     case 'oracle-voir': {
-      verifierCible(etape, action.cible);
+      viser(action.cible);
       const cible = joueur(action.cible);
       suivant.infoMJ = `${nomJoueur(cible)} est ${ROLES[cible.role].nom}`;
       break;
@@ -157,7 +160,7 @@ export function appliquerNuit(etat: EtatPartie, phase: PhaseNuit, action: Action
       if (new Set(cibles).size !== 3) {
         throw new Error("L'Instinct doit désigner 3 joueurs différents");
       }
-      cibles.forEach((c) => verifierCible(etape, c));
+      cibles.forEach(viser);
       const trouveSpectre = cibles.some((c) => joueur(c).camp === 'spectres');
       if (trouveSpectre) {
         suivant.infoMJ = "L'Instinct garde son pouvoir : il y a un Spectre parmi les 3";
@@ -169,8 +172,22 @@ export function appliquerNuit(etat: EtatPartie, phase: PhaseNuit, action: Action
     }
 
     case 'spectres-attaquer':
-      if (action.cible !== null) verifierCible(etape, action.cible);
+      if (action.cible !== null) viser(action.cible);
       suivant.victimeSpectres = action.cible;
+      break;
+
+    case 'sainte-sauver':
+      if (!action.utiliser) break;
+      if (etat.victimeSpectres === null) throw new Error("Pas de victime à sauver cette nuit");
+      suivant.sauveeParSainte = true;
+      acteur.memoire.pouvoirUtilise = true;
+      break;
+
+    case 'vipere-empoisonner':
+      if (action.cible === null) break;
+      viser(action.cible);
+      suivant.empoisonne = action.cible;
+      acteur.memoire.pouvoirUtilise = true;
       break;
 
     case 'passer':

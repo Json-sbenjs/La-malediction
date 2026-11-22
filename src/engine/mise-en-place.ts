@@ -51,12 +51,19 @@ export function creerPartie(plan: Plan, prenoms: (string | null)[] = []): EtatPa
       memoire: { pouvoirUtilise: false, pouvoirPerdu: false, derniereCible: null, lien: null },
     }));
 
+  // Si l'Alpha est une carte posée sur un siège, son porteur l'est d'office.
+  // Sinon, le village l'élira le premier jour.
+  const porteurAlpha = joueurs.find((j) => j.role === 'alpha');
+
   return {
     planId: plan.id,
     joueurs,
     phase: { type: 'nuit', numero: 1, etape: 0 },
-    alpha: null,
+    alpha: porteurAlpha?.id ?? null,
     victimeSpectres: null,
+    sauveeParSainte: false,
+    empoisonne: null,
+    decisions: [],
     infoMJ: null,
   };
 }
