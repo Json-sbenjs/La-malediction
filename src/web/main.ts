@@ -20,11 +20,40 @@ import {
   type Plan,
 } from '../engine';
 import { consigneReveil, modeSaisie } from './consignes';
+import { clicGenerateur, ecranGenerateur, nouveauGenerateur, type EtatGenerateur } from './generateur';
 import { PLANS_DEMO } from './plans-demo';
 import './style.css';
 
-const plans: Plan[] = PLANS.length > 0 ? PLANS : PLANS_DEMO;
 const CLE_SAUVEGARDE = 'malediction:partie';
+const CLE_PLANS = 'malediction:plans';
+
+/** Salles créées avec le générateur, gardées dans le navigateur. */
+let plansPerso: Plan[] = lirePlansPerso();
+
+function lirePlansPerso(): Plan[] {
+  try {
+    return JSON.parse(localStorage.getItem(CLE_PLANS) ?? '[]') as Plan[];
+  } catch {
+    return [];
+  }
+}
+
+function ecrirePlansPerso(): void {
+  try {
+    localStorage.setItem(CLE_PLANS, JSON.stringify(plansPerso));
+  } catch {
+    // Stockage indisponible : la salle reste disponible jusqu'à la fermeture.
+  }
+}
+
+/** Plans saisis dans le code (ou de démo s'il n'y en a pas), puis les salles sur mesure. */
+function tousLesPlans(): Plan[] {
+  return [...(PLANS.length > 0 ? PLANS : PLANS_DEMO), ...plansPerso];
+}
+
+function estPerso(salle: string, nb: number): boolean {
+  return plansPerso.some((p) => p.salle === salle && p.nbJoueurs === nb);
+}
 
 // ─── État de l'interface ──────────────────────────────────────────────
 
@@ -41,12 +70,15 @@ interface Ui {
   votes: Record<JoueurId, JoueurId | null>;
   votant: JoueurId | null;
   erreur: string | null;
+  /** Écran du générateur ouvert (null = fermé). */
+  generateur: EtatGenerateur | null;
 }
 
 const ui: Ui = {
   etat: null,
   plan: null,
-  salle: sallesDisponibles(plans)[0] ?? '',
+  generateur: null,
+  salle: sallesDisponibles(tousLesPlans())[0] ?? '',
   nbJoueurs: 0,
   prenoms: [],
   selection: [],
@@ -54,7 +86,7 @@ const ui: Ui = {
   votant: null,
   erreur: null,
 };
-ui.nbJoueurs = nombresDeJoueurs(ui.salle, plans)[0] ?? 0;
+ui.nbJoueurs = nombresDeJoueurs(ui.salle, tousLesPlans())[0] ?? 0;
 
 function sauvegarder(): void {
   try {
@@ -150,6 +182,7 @@ function nombreACocher(etape: Etape): number {
 // ─── Écran 1 : choix du plan ──────────────────────────────────────────
 
 function ecranChoix(): string {
+  const plans = tousLesPlans();
   const salles = sallesDisponibles(plans);
   const nombres = nombresDeJoueurs(ui.salle, plans);
   const champsPrenoms = Array.from({ length: ui.nbJoueurs }, (_, i) => {
@@ -161,7 +194,7 @@ function ecranChoix(): string {
     <main class="choix">
       <h1>La Malédiction</h1>
       <p class="sous-titre">Assistant du maître du jeu</p>
-      ${plans === PLANS_DEMO ? '<p class="note">Plans de démonstration : les vrais plans de salle ne sont pas encore saisis.</p>' : ''}
+      ${PLANS.length === 0 && plansPerso.length === 0 ? '<p class="note">Plans de démonstration : crée ta salle avec « Salle sur mesure ».</p>' : ''}
       <section class="carte">
         <h2>Salle</h2>
         <div class="choix-ligne">${salles
@@ -171,6 +204,10 @@ function ecranChoix(): string {
         <div class="choix-ligne">${nombres
           .map((n) => bouton(String(n), `data-nb="${n}"`, n === ui.nbJoueurs ? 'actif' : ''))
           .join('')}</div>
+        <div class="choix-ligne">
+          ${bouton('🛠️ Salle sur mesure', 'data-ouvrir-generateur')}
+          ${estPerso(ui.salle, ui.nbJoueurs) ? bouton('Supprimer ce plan', 'data-supprimer-plan', 'discret') : ''}
+        </div>
       </section>
       ${ui.nbJoueurs > 0 ? `<section class="carte"><h2>Prénoms</h2><div class="prenoms">${champsPrenoms}</div></section>` : ''}
       ${ui.erreur ? `<p class="erreur">${echapper(ui.erreur)}</p>` : ''}
@@ -347,7 +384,7 @@ function ecranPartie(): string {
 }
 
 function afficher(): void {
-  app.innerHTML = ui.etat ? ecranPartie() : ecranChoix();
+  app.innerHTML = ui.generateur ? ecranGenerateur(ui.generateur) : ui.etat ? ecranPartie() : ecranChoix();
 }
 
 // ─── Clics ────────────────────────────────────────────────────────────
@@ -398,20 +435,44 @@ app.addEventListener('click', (evt) => {
   if (!el || el.hasAttribute('disabled')) return;
   const d = el.dataset;
 
+  // Générateur de salle
+  if (ui.generateur) {
+    const resultat = clicGenerateur(ui.generateur, d);
+    if (resultat?.type === 'enregistrer') {
+      const { plan } = resultat;
+      plansPerso = [...plansPerso.filter((p) => p.id !== plan.id), plan];
+      ecrirePlansPerso();
+      ui.salle = plan.salle;
+      ui.nbJoueurs = plan.nbJoueurs;
+      ui.prenoms = [];
+    }
+    if (resultat) ui.generateur = null;
+    return afficher();
+  }
+
   // Écran de choix
-  if (d.salle !== undefined) {
+  if (d.ouvrirGenerateur !== undefined) {
+    ui.generateur = nouveauGenerateur();
+  } else if (d.supprimerPlan !== undefined) {
+    if (!confirm(`Supprimer le plan « ${ui.salle} » à ${ui.nbJoueurs} joueurs ?`)) return;
+    plansPerso = plansPerso.filter((p) => !(p.salle === ui.salle && p.nbJoueurs === ui.nbJoueurs));
+    ecrirePlansPerso();
+    ui.salle = sallesDisponibles(tousLesPlans())[0] ?? '';
+    ui.nbJoueurs = nombresDeJoueurs(ui.salle, tousLesPlans())[0] ?? 0;
+  } else if (d.salle !== undefined) {
     ui.salle = d.salle;
-    ui.nbJoueurs = nombresDeJoueurs(ui.salle, plans)[0] ?? 0;
+    ui.nbJoueurs = nombresDeJoueurs(ui.salle, tousLesPlans())[0] ?? 0;
   } else if (d.nb !== undefined) {
     ui.nbJoueurs = Number(d.nb);
   } else if (d.commencer !== undefined) {
     try {
-      const plan = choisirPlan(ui.salle, ui.nbJoueurs, plans);
+      const plan = choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans());
       const prenoms = Array.from({ length: plan.nbJoueurs }, (_, i) => ui.prenoms[i] || null);
       ui.etat = creerPartie(plan, prenoms);
       ui.plan = plan;
       viderSaisie();
       sauvegarder();
+      void garderEcranAllume();
     } catch (e) {
       ui.erreur = e instanceof Error ? e.message : String(e);
     }
@@ -453,7 +514,29 @@ app.addEventListener('click', (evt) => {
 app.addEventListener('input', (evt) => {
   const el = evt.target as HTMLInputElement;
   if (el.dataset.prenom !== undefined) ui.prenoms[Number(el.dataset.prenom)] = el.value;
+  if (el.dataset.genSalle !== undefined && ui.generateur) ui.generateur.salle = el.value;
 });
+
+// ─── Tablette : écran allumé, appli installable et hors ligne ─────────
+
+/** Empêche l'iPad de se mettre en veille pendant la partie (si le navigateur le permet). */
+async function garderEcranAllume(): Promise<void> {
+  try {
+    if (ui.etat && document.visibilityState === 'visible' && 'wakeLock' in navigator) {
+      await navigator.wakeLock.request('screen');
+    }
+  } catch {
+    // Refusé (batterie faible…) : pas grave.
+  }
+}
+document.addEventListener('visibilitychange', () => void garderEcranAllume());
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {
+    // Pas de service worker : l'appli marche, mais pas hors ligne.
+  });
+}
 
 restaurer();
 afficher();
+void garderEcranAllume();

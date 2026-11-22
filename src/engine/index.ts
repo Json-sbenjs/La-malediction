@@ -50,3 +50,14 @@ export function appliquer(etat: EtatPartie, action: Action): EtatPartie {
   }
   return suivant;
 }
+export {
+  FORMES,
+  compositionConseillee,
+  echangerRoles,
+  genererPlan,
+  maxJoueursPossible,
+  totalComposition,
+  type Composition,
+  type Forme,
+} from './generateur';
+export { MIN_JOUEURS } from './plans';

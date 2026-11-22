@@ -24,6 +24,15 @@ npm test
 | `npm run build` | vérifie les types (`tsc`) puis construit l'appli dans `dist/` |
 | `npm run preview` | sert la version construite |
 
+### Sur l'iPad
+
+- **En local** (même Wi-Fi) : `npm run dev -- --host`, puis ouvrir l'adresse « Network » affichée dans Safari.
+- **En ligne** : chaque push sur `main` publie l'appli sur GitHub Pages (`.github/workflows/pages.yml`).
+  À activer une fois dans GitHub : *Settings → Pages → Source : GitHub Actions*.
+  Adresse : https://json-sbenjs.github.io/La-malediction/
+- **Installer** : dans Safari, *Partager → Sur l'écran d'accueil*. L'appli marche ensuite sans réseau,
+  la partie en cours est gardée si on la ferme, et l'écran ne se met pas en veille pendant la partie.
+
 ## Organisation du code
 
 ```
@@ -39,11 +48,13 @@ src/
 │   ├── mort.ts      effets à la mort : Main Noire, Anathème, Adepte, Usurpateur, Alpha, Trinité
 │   ├── vote.ts      élection de l'Alpha, vote du village (Alpha ×2)
 │   ├── victoire.ts  conditions de victoire
+│   ├── generateur.ts  salle sur mesure : composition conseillée, formes, tirage des rôles
 │   ├── outils.ts    petites fonctions partagées (trouverJoueur, vivants…)
 │   └── index.ts     porte d'entrée : creerPartie, etapeSuivante, appliquer
 └── web/             interface tablette (Vite)
     ├── main.ts      écrans : choix du plan, plan cliquable, nuit guidée, jour + vote
     ├── consignes.ts textes du MJ et saisie de chaque rôle
+    ├── generateur.ts  écran « salle sur mesure »
     ├── plans-demo.ts  plans de démonstration (en attendant les vrais)
     └── style.css
 tests/
@@ -52,9 +63,10 @@ tests/
     ├── roles.test.ts, plans.test.ts, mise-en-place.test.ts
     ├── nuit.test.ts, resolution-nuit.test.ts, mort.test.ts
     ├── vote.test.ts, victoire.test.ts, premiere-nuit.test.ts, trinite.test.ts
-    ├── plans-demo.test.ts
+    ├── plans-demo.test.ts, generateur.test.ts
     ├── partie-complete.test.ts   ★ jalon : une partie du début à la victoire
     └── purete.test.ts   vérifie que le moteur reste pur
+public/              manifeste, service worker (hors ligne), icônes
 asset/               planche des cartes (PDF)
 ```
 
@@ -85,7 +97,7 @@ Deadline : le 27/12. On code d'abord les rôles qui sont sur les plans de salle.
 | S2 (30/11) | plans, mise en place, `index.ts`, nuit (ordre de réveil), rôles de nuit ✅ (plans à saisir) |
 | S3 (07/12) | rôles de nuit, résolution de la nuit, vote, effets à la mort, victoire. Jalon : une partie complète dans les tests ✅ |
 | S4 (14/12) | effets à la mort, première nuit, écrans tablette, Trinité ✅ |
-| S5 (21/12) | écrans tablette. Jalon : partie réelle sur iPad. Puis : générateur de salle sur mesure |
+| S5 (21/12) | écrans tablette (installable, hors ligne) ✅, générateur de salle sur mesure ✅. Jalon : partie réelle sur iPad (à jouer) |
 
 Après la deadline : terminal de test, historique et annulation, et les autres rôles.
 
