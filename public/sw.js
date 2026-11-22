@@ -1,7 +1,7 @@
 // Service worker : l'appli continue de marcher sans réseau (salle sans Wi-Fi).
 // Stratégie : réseau d'abord, et on garde une copie ; sans réseau, on sert la copie.
 const CACHE = 'malediction-v1';
-const BASE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
+const BASE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(BASE)));
