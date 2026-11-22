@@ -31,13 +31,19 @@ src/
 ├── engine/          moteur du jeu, TypeScript pur
 │   ├── types.ts     types de base : Joueur, Camp, RoleId, Phase, EtatPartie, Action
 │   ├── roles.ts     registre des rôles : camp, cartes, réveil, usage unique
-│   └── plans.ts     plans de salle + validerPlan()
+│   ├── plans.ts     plans de salle + validerPlan()
+│   ├── mise-en-place.ts  choix salle + nb de joueurs → plan → creerPartie()
+│   ├── nuit.ts      ordre de réveil, « si en vie » / « si occupé », rôles de nuit
+│   └── index.ts     porte d'entrée : creerPartie, etapeSuivante, appliquer
 └── web/             interface tablette (PWA avec Vite)
     └── main.ts
 tests/
 └── engine/          tests Vitest du moteur, un fichier par module
+    ├── aides.ts         outils partagés (planDeTest, PLAN_NUIT)
     ├── roles.test.ts
     ├── plans.test.ts
+    ├── mise-en-place.test.ts
+    ├── nuit.test.ts
     └── purete.test.ts   vérifie que le moteur reste pur
 asset/               planche des cartes (PDF)
 ```
@@ -46,7 +52,7 @@ asset/               planche des cartes (PDF)
 
 Le moteur est une **machine à états** : l'état de la partie plus une action du MJ donnent un nouvel état. L'interface ne fait qu'afficher l'étape suivante et renvoyer les choix du MJ au moteur.
 
-Porte d'entrée prévue (`src/engine/index.ts`, semaine 2) :
+Porte d'entrée (`src/engine/index.ts`) :
 
 - `creerPartie(plan, prenoms?)` crée la partie ;
 - `etapeSuivante(etat)` dit ce que le MJ doit faire ;
@@ -66,7 +72,7 @@ Deadline : le 27/12. On code d'abord les rôles qui sont sur les plans de salle.
 | Semaine | Contenu |
 | --- | --- |
 | S1 (23/11) | projet, types, rôles, plans de salle ✅ (plans à saisir) |
-| S2 (30/11) | plans, mise en place, `index.ts`, nuit (ordre de réveil), rôles de nuit |
+| S2 (30/11) | plans, mise en place, `index.ts`, nuit (ordre de réveil), rôles de nuit ✅ (plans à saisir) |
 | S3 (07/12) | rôles de nuit, résolution de la nuit, vote, effets à la mort, victoire. Jalon : une partie complète dans les tests |
 | S4 (14/12) | effets à la mort, première nuit, écrans tablette, Trinité |
 | S5 (21/12) | écrans tablette. Jalon : partie réelle sur iPad |

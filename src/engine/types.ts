@@ -50,8 +50,8 @@ export interface Memoire {
   pouvoirUtilise: boolean;
   /** Pouvoir perdu définitivement (Instinct qui rate). */
   pouvoirPerdu: boolean;
-  /** Dernière cible : interdit de viser la même deux nuits de suite (Protecteur, Courtisane). */
-  derniereCible: JoueurId | null;
+  /** Dernière cible et sa nuit : interdit de viser la même deux nuits de suite (Protecteur, Courtisane). */
+  derniereCible: { nuit: number; cible: JoueurId } | null;
   /** Joueur lié : modèle de l'Anathème, mentor de l'Adepte. */
   lien: JoueurId | null;
 }
@@ -69,10 +69,12 @@ export interface Joueur {
   memoire: Memoire;
 }
 
-/** Où en est la partie. Union discriminée sur `type`. */
+/**
+ * Où en est la partie. Union discriminée sur `type`.
+ * La première nuit, c'est `nuit` avec `numero: 1`.
+ * `etape` = position dans l'ordre de réveil (voir nuit.ts).
+ */
 export type Phase =
-  | { type: 'mise-en-place' }
-  | { type: 'premiere-nuit'; etape: number }
   | { type: 'nuit'; numero: number; etape: number }
   | { type: 'jour'; numero: number }
   | { type: 'fin'; gagnants: Camp };
@@ -86,7 +88,23 @@ export interface EtatPartie {
   alpha: JoueurId | null;
   /** Victime désignée par les Spectres pendant la nuit en cours. */
   victimeSpectres: JoueurId | null;
+  /** Info à transmettre en secret par le MJ (résultat de l'Oracle, de l'Instinct…). */
+  infoMJ: string | null;
 }
+
+/** Ce que le MJ doit faire maintenant. Renvoyé par `etapeSuivante(etat)`. */
+export type Etape =
+  | {
+      type: 'reveil';
+      role: RoleId;
+      /** Joueurs de ce rôle qui peuvent agir (vivants, pas occupés, pouvoir dispo). */
+      acteurs: JoueurId[];
+      /** Joueurs qu'ils ont le droit de viser. */
+      ciblesPossibles: JoueurId[];
+    }
+  | { type: 'resolution-nuit'; numero: number }
+  | { type: 'jour'; numero: number }
+  | { type: 'fin'; gagnants: Camp };
 
 /**
  * Ce que le MJ peut faire. Union discriminée sur `type` :

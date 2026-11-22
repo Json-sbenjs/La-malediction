@@ -1,16 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { PLANS, compterRoles, trouverPlan, validerPlan, type Plan } from '../../src/engine/plans';
+import { PLANS, compterRoles, trouverPlan, validerPlan } from '../../src/engine/plans';
+import { planDeTest } from './aides';
 import type { RoleId } from '../../src/engine/types';
-
-/** Fabrique un plan de test à partir d'une liste de rôles (siège 1, 2, 3…). */
-function planDeTest(roles: RoleId[], salle = 'Test'): Plan {
-  return {
-    id: `${salle}-${roles.length}`,
-    salle,
-    nbJoueurs: roles.length,
-    sieges: roles.map((role, i) => ({ numero: i + 1, role, position: { x: 50, y: 50 } })),
-  };
-}
 
 const HUIT: RoleId[] = [
   'spectre', 'spectre', 'oracle', 'protecteur',
