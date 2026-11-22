@@ -79,8 +79,12 @@ const CHEMINS: Record<Forme, { points: Point[]; ferme: boolean }> = {
     points: [{ x: 0.5, y: 0.45 }, { x: 3.5, y: 0.45 }, { x: 3.5, y: 2.55 }, { x: 0.5, y: 2.55 }],
     ferme: true,
   },
+  // Les angles du U sont coupés en biais : deux sièges ne se retrouvent pas coin contre coin.
   u: {
-    points: [{ x: 0.45, y: 0.4 }, { x: 0.45, y: 2.6 }, { x: 3.55, y: 2.6 }, { x: 3.55, y: 0.4 }],
+    points: [
+      { x: 0.3, y: 0.3 }, { x: 0.3, y: 2.45 }, { x: 0.55, y: 2.7 },
+      { x: 3.45, y: 2.7 }, { x: 3.7, y: 2.45 }, { x: 3.7, y: 0.3 },
+    ],
     ferme: false,
   },
 };
@@ -107,14 +111,19 @@ function lelongDe(points: Point[], ferme: boolean, n: number): Point[] {
   });
 }
 
+/** L'ovale du tour de table, approché par 120 points (en partant du haut). */
+function ellipse(): Point[] {
+  return Array.from({ length: 120 }, (_, i) => {
+    const angle = -Math.PI / 2 + (2 * Math.PI * i) / 120;
+    return { x: 2 + 1.78 * Math.cos(angle), y: 1.5 + 1.28 * Math.sin(angle) };
+  });
+}
+
 /** Positions des sièges (en % du plan), siège 1 en haut à gauche, dans le sens des aiguilles d'une montre. */
 export function disposer(forme: Forme, n: number): Siege['position'][] {
   const reels =
     forme === 'ovale'
-      ? Array.from({ length: n }, (_, i) => {
-          const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
-          return { x: 2 + 1.68 * Math.cos(angle), y: 1.5 + 1.2 * Math.sin(angle) };
-        })
+      ? lelongDe(ellipse(), true, n) // même distance entre deux sièges tout autour
       : lelongDe(CHEMINS[forme].points, CHEMINS[forme].ferme, n);
 
   return reels.map((p) => ({ x: Math.round((p.x / 4) * 1000) / 10, y: Math.round((p.y / 3) * 1000) / 10 }));

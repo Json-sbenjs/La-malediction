@@ -1,22 +1,16 @@
 // Plans de DÉMONSTRATION, pour tester l'interface tant que les vrais plans
 // ne sont pas saisis (le générateur de salle sur mesure arrive en semaine 5).
+import { disposer } from '../engine/generateur';
 import type { Plan, RoleId } from '../engine';
 
-/** Place les sièges en ovale, siège 1 en haut, dans le sens des aiguilles d'une montre. */
+/** Tour de table, avec la même disposition que le générateur de salle. */
 function enOvale(id: string, roles: RoleId[]): Plan {
-  const n = roles.length;
+  const positions = disposer('ovale', roles.length);
   return {
     id,
     salle: 'Démo',
-    nbJoueurs: n,
-    sieges: roles.map((role, i) => {
-      const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
-      return {
-        numero: i + 1,
-        role,
-        position: { x: Math.round(50 + 42 * Math.cos(angle)), y: Math.round(50 + 40 * Math.sin(angle)) },
-      };
-    }),
+    nbJoueurs: roles.length,
+    sieges: roles.map((role, i) => ({ numero: i + 1, role, position: positions[i] })),
   };
 }
 

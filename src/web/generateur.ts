@@ -14,6 +14,7 @@ import {
   type Plan,
   type RoleId,
 } from '../engine';
+import { densite } from './densite';
 
 export interface EtatGenerateur {
   salle: string;
@@ -59,6 +60,7 @@ function ligneRole(g: EtatGenerateur, role: RoleId): string {
   const pas = role === 'trinite' ? def.cartes : 1;
   return `
     <li class="ligne-role camp-${def.camp}">
+      <img class="vignette" src="${import.meta.env.BASE_URL}roles/${role}.webp" alt="">
       <span class="nom-role">${echapper(def.nom)}</span>
       <span class="compteur">
         ${bouton('−', `data-gen-moins="${role}" data-pas="${pas}" ${n === 0 ? 'disabled' : ''}`, 'rond')}
@@ -74,13 +76,14 @@ function apercu(plan: Plan, choisi: number | null): string {
     .map(
       (s) => `
       <button type="button" class="siege actif camp-${ROLES[s.role].camp} ${choisi === s.numero ? 'choisi' : ''}"
-        data-gen-siege="${s.numero}" style="left:${s.position.x}%;top:${s.position.y}%">
+        data-gen-siege="${s.numero}" style="--x:${s.position.x};--y:${s.position.y}">
+        <img class="vignette" src="${import.meta.env.BASE_URL}roles/${s.role}.webp" alt="">
         <span class="num">${s.numero}</span>
         <span class="role">${echapper(ROLES[s.role].nom)}</span>
       </button>`,
     )
     .join('');
-  return `<section class="salle" aria-label="Aperçu de la salle">${sieges}</section>`;
+  return `<section class="salle ${densite(plan.nbJoueurs)}" aria-label="Aperçu de la salle">${sieges}</section>`;
 }
 
 export function ecranGenerateur(g: EtatGenerateur): string {

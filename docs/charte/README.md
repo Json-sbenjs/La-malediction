@@ -12,7 +12,7 @@ Charte graphique de l'assistant du maître du jeu de **La Malédiction des Spect
 
 - Nom complet : **La Malédiction des Spectres** (accueil, titre de l'onglet, manifeste).
 - Nom court : **Malédiction** (sous l'icône de l'iPad).
-- On écrit **Pèlerin** avec un accent et un seul L. La carte imprimée porte « PELLERIN » : à corriger à la prochaine impression.
+- Dans l'appli, on écrit **Pèlerin**. La carte imprimée garde son orthographe « PELLERIN ».
 
 ## Le logo : le blason
 
@@ -57,9 +57,16 @@ Deux familles, toutes deux sur Google Fonts. Dans l'appli, on les embarque (paqu
 Les 28 illustrations des cartes (groupe d'assets **Illustrations**), en 512 × 512 WebP.
 
 - **Au réveil d'un rôle** : l'illustration en grand en haut du panneau, coins `arrondi-siege`, ombre `ombre-carte`, puis le nom du rôle en onciale.
-- **Sur les sièges** : une vignette ronde de 36 à 44px, cadrée sur le haut de l'image (le visage).
+- **Sur les sièges** : une vignette ronde, cadrée sur le haut de l'image (le visage). Elle rétrécit avec le nombre de joueurs.
 - Ne jamais écrire sur une illustration ni la recadrer en bandeau : on la montre comme une carte.
 - Un rôle sans illustration (rôle futur) affiche le blason à la place.
+
+## La salle
+
+Les sièges suivent le plan de la salle (tour de table, table rectangulaire, tables en U) et rétrécissent quand la salle se remplit :
+- **jusqu'à 10 joueurs** : numéro, vignette, prénom, rôle et état ;
+- **de 11 à 15 joueurs** : le prénom remplace le nom du rôle (la vignette montre le rôle) ;
+- **16 joueurs et plus** : vignette et numéro côte à côte, une seule ligne de texte.
 
 ## Nuit et jour
 

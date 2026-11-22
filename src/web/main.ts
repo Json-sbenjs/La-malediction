@@ -21,7 +21,13 @@ import {
 } from '../engine';
 import { consigneReveil, modeSaisie } from './consignes';
 import { clicGenerateur, ecranGenerateur, nouveauGenerateur, type EtatGenerateur } from './generateur';
+import { densite } from './densite';
 import { PLANS_DEMO } from './plans-demo';
+import '@fontsource/eb-garamond/400.css';
+import '@fontsource/eb-garamond/500.css';
+import '@fontsource/eb-garamond/600.css';
+import '@fontsource/eb-garamond/700.css';
+import '@fontsource/uncial-antiqua/400.css';
 import './style.css';
 
 const CLE_SAUVEGARDE = 'malediction:partie';
@@ -137,7 +143,17 @@ function echapper(texte: string): string {
   return texte.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
+/** Illustration d'un rôle (cartes du jeu, dans public/roles). */
+function image(role: string): string {
+  return `${import.meta.env.BASE_URL}roles/${role}.webp`;
+}
+
+function illustration(role: string, alt: string): string {
+  return `<img class="illustration" src="${image(role)}" alt="${echapper(alt)}">`;
+}
+
 const NOM_CAMP: Record<Camp, string> = { pelerins: 'Pèlerins', spectres: 'Spectres', trinite: 'Trinité' };
+const IMAGE_CAMP: Record<Camp, string> = { pelerins: 'pelerin', spectres: 'spectre', trinite: 'trinite' };
 
 function nom(id: JoueurId): string {
   const j = ui.etat?.joueurs.find((x) => x.id === id);
@@ -192,8 +208,11 @@ function ecranChoix(): string {
 
   return `
     <main class="choix">
-      <h1>La Malédiction</h1>
-      <p class="sous-titre">Assistant du maître du jeu</p>
+      <header class="entete">
+        <img class="blason" src="${import.meta.env.BASE_URL}blason.webp" alt="Blason de la Malédiction des Spectres">
+        <h1>La Malédiction des Spectres</h1>
+        <p class="sous-titre">Assistant du maître du jeu</p>
+      </header>
       ${PLANS.length === 0 && plansPerso.length === 0 ? '<p class="note">Plans de démonstration : crée ta salle avec « Salle sur mesure ».</p>' : ''}
       <section class="carte">
         <h2>Salle</h2>
@@ -242,8 +261,9 @@ function siege(j: Joueur, etape: Etape, actifs: JoueurId[], compte: Record<Joueu
   ].join('');
 
   return `
-    <button type="button" class="${classes}" data-siege="${j.id}" style="left:${pos.x}%;top:${pos.y}%"
+    <button type="button" class="${classes}" data-siege="${j.id}" style="--x:${pos.x};--y:${pos.y}"
       ${actifs.includes(j.id) || etape.type === 'vote' ? '' : 'tabindex="-1"'}>
+      <img class="vignette" src="${image(j.role)}" alt="">
       <span class="num">${j.id}</span>
       <span class="nom">${echapper(j.nom ?? '')}</span>
       <span class="role">${echapper(ROLES[j.role].nom)}</span>
@@ -264,24 +284,29 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
       const qui = etape.acteurs.map(nom).join(', ');
       let saisie = '';
       if (mode.type === 'aucune') {
-        saisie = bouton(mode.bouton, 'data-passer', 'principal');
+        saisie = `<div class="boutons">${bouton(mode.bouton, 'data-passer', 'principal')}</div>`;
       } else if (mode.type === 'sainte') {
         const victime = etape.ciblesPossibles[0];
         saisie =
           victime === undefined
-            ? `<p>Pas de victime cette nuit.</p>${bouton('Continuer', 'data-sainte="non"', 'principal')}`
+            ? `<p>Pas de victime cette nuit.</p><div class="boutons">${bouton('Continuer', 'data-sainte="non"', 'principal')}</div>`
             : `<p>Victime : <strong>${nom(victime)}</strong></p>
-               ${bouton('Sauver la victime', 'data-sainte="oui"', 'principal')}
-               ${bouton('Ne pas utiliser la potion', 'data-sainte="non"')}`;
+               <div class="boutons">
+                 ${bouton('Sauver la victime', 'data-sainte="oui"', 'principal')}
+                 ${bouton('Ne pas utiliser la potion', 'data-sainte="non"')}
+               </div>`;
       } else {
         const pret = ui.selection.length === mode.nombre;
         saisie = `
           <p>Touche ${mode.nombre === 1 ? 'un siège' : '3 sièges'} sur le plan. Choix : <strong>${choisis}</strong></p>
-          ${valider(pret)}
-          ${mode.passer ? bouton(echapper(mode.passer.texte), 'data-passer-role') : ''}`;
+          <div class="boutons">
+            ${valider(pret)}
+            ${mode.passer ? bouton(echapper(mode.passer.texte), 'data-passer-role') : ''}
+          </div>`;
       }
       return `
-        <h2>${echapper(ROLES[etape.role].nom)}</h2>
+        ${illustration(etape.role, ROLES[etape.role].nom)}
+        <h2 class="titre-role">${echapper(ROLES[etape.role].nom)}</h2>
         <p class="consigne">${consigneReveil(etape.role, premiereNuit)}</p>
         <p class="qui">${etape.acteurs.length > 1 ? 'Joueurs' : 'Joueur'} : ${qui}</p>
         ${saisie}`;
@@ -295,18 +320,21 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
             ? "Personne n'est mort cette nuit."
             : `Mort${etape.morts.length > 1 ? 's' : ''} de la nuit : <strong>${etape.morts.map(nom).join(', ')}</strong>`
         }</p>
-        ${bouton('Le village se réveille', 'data-passer', 'principal')}`;
+        <div class="boutons">${bouton('Le village se réveille', 'data-passer', 'principal')}</div>`;
 
     case 'decision': {
       const d = etape.decision;
       if (d.type === 'usurpateur') {
         return `
-          <h2>L'Usurpateur</h2>
+          ${illustration('usurpateur', "L'Usurpateur")}
+          <h2 class="titre-role">L'Usurpateur</h2>
           <p class="consigne">${nom(d.mort)} va mourir. ${nom(d.usurpateur)} veut-il prendre son rôle (${echapper(
             ROLES[etat.joueurs.find((j) => j.id === d.mort)!.role].nom,
           )}) ?</p>
-          ${bouton('Il prend le rôle', `data-usurper="${d.mort}"`, 'principal')}
-          ${bouton('Il refuse', 'data-passer')}`;
+          <div class="boutons">
+            ${bouton('Il prend le rôle', `data-usurper="${d.mort}"`, 'principal')}
+            ${bouton('Il refuse', 'data-passer')}
+          </div>`;
       }
       const titre = d.type === 'main-noire' ? 'La Main Noire' : "Successeur de l'Alpha";
       const texte =
@@ -314,19 +342,23 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
           ? `${nom(d.tireur)} meurt : la Main Noire élimine un joueur de son choix.`
           : `L'Alpha ${nom(d.ancien)} est mort : il désigne son successeur.`;
       return `
-        <h2>${titre}</h2>
+        ${illustration(d.type === 'main-noire' ? 'main-noire' : 'alpha', titre)}
+        <h2 class="titre-role">${titre}</h2>
         <p class="consigne">${texte}</p>
         <p>Choix : <strong>${choisis}</strong></p>
-        ${valider(ui.selection.length === 1)}
-        ${bouton(d.type === 'main-noire' ? 'Ne tire pas' : 'Pas de successeur', 'data-passer')}`;
+        <div class="boutons">
+          ${valider(ui.selection.length === 1)}
+          ${bouton(d.type === 'main-noire' ? 'Ne tire pas' : 'Pas de successeur', 'data-passer')}
+        </div>`;
     }
 
     case 'election-alpha':
       return `
-        <h2>Élection de l'Alpha</h2>
+        ${illustration('alpha', "L'Alpha")}
+        <h2 class="titre-role">Élection de l'Alpha</h2>
         <p class="consigne">Le village élit son Alpha : son vote comptera double.</p>
         <p>Élu : <strong>${choisis}</strong></p>
-        ${valider(ui.selection.length === 1)}`;
+        <div class="boutons">${valider(ui.selection.length === 1)}</div>`;
 
     case 'vote': {
       const nbVotes = Object.values(ui.votes).filter((v) => v !== null).length;
@@ -339,17 +371,24 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
         <p class="consigne">Touche un votant, puis le joueur qu'il vise. La voix de l'Alpha 👑 compte double.</p>
         <p>${ui.votant === null ? 'Touche un votant.' : `${nom(ui.votant)} vote contre… (touche-le à nouveau pour annuler)`}</p>
         ${classement ? `<ul class="classement">${classement}</ul>` : ''}
-        ${bouton(`Valider le vote (${nbVotes})`, `data-voter ${nbVotes === 0 ? 'disabled' : ''}`, 'principal')}
-        ${bouton('Personne n\'est éliminé', 'data-passer')}`;
+        <div class="boutons">
+          ${bouton(`Valider le vote (${nbVotes})`, `data-voter ${nbVotes === 0 ? 'disabled' : ''}`, 'principal')}
+          ${bouton('Personne n\'est éliminé', 'data-passer')}
+        </div>`;
     }
 
     case 'fin':
       return `
-        <h2>Fin de la partie</h2>
-        <p class="consigne victoire">${
-          etape.gagnants === null ? 'Tout le monde est mort : personne ne gagne.' : `Victoire : ${NOM_CAMP[etape.gagnants]} !`
+        ${
+          etape.gagnants === null
+            ? `<img class="illustration" src="${import.meta.env.BASE_URL}blason.webp" alt="">`
+            : illustration(IMAGE_CAMP[etape.gagnants], NOM_CAMP[etape.gagnants])
+        }
+        <h2 class="titre-role">Fin de la partie</h2>
+        <p class="victoire ${etape.gagnants ?? ''}">${
+          etape.gagnants === null ? 'Personne ne gagne' : `Victoire des ${NOM_CAMP[etape.gagnants]}`
         }</p>
-        ${bouton('Nouvelle partie', 'data-nouvelle', 'principal')}`;
+        <div class="boutons">${bouton('Nouvelle partie', 'data-nouvelle', 'principal')}</div>`;
   }
 }
 
@@ -372,7 +411,7 @@ function ecranPartie(): string {
       ${bouton('Quitter', 'data-quitter', 'discret')}
     </header>
     <main class="partie">
-      <section class="salle" aria-label="Plan de la salle">
+      <section class="salle ${densite(etat.joueurs.length)}" aria-label="Plan de la salle">
         ${etat.joueurs.map((j) => siege(j, etape, actifs, compte)).join('')}
       </section>
       <section class="panneau">
@@ -383,8 +422,28 @@ function ecranPartie(): string {
     </main>`;
 }
 
+/** Thème de la charte : Nuit pendant les réveils et hors partie, Jour du matin à la nuit suivante. */
+function themeVoulu(): 'nuit' | 'jour' {
+  const phase = ui.generateur ? null : ui.etat?.phase.type;
+  return phase === 'jour' || phase === 'fin' ? 'jour' : 'nuit';
+}
+
+const moinsDAnimations = window.matchMedia('(prefers-reduced-motion: reduce)');
+
 function afficher(): void {
   app.innerHTML = ui.generateur ? ecranGenerateur(ui.generateur) : ui.etat ? ecranPartie() : ecranChoix();
+
+  // Bascule nuit / jour : fondu de 600 ms (le fond de page change en douceur via le CSS).
+  const theme = themeVoulu();
+  const racine = document.documentElement;
+  if (racine.dataset.theme !== theme) {
+    const premiereFois = racine.dataset.theme === undefined;
+    racine.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'jour' ? '#16130e' : '#0d1113');
+    if (!premiereFois && !moinsDAnimations.matches) {
+      app.animate([{ opacity: 0.25 }, { opacity: 1 }], { duration: 600, easing: 'ease-out' });
+    }
+  }
 }
 
 // ─── Clics ────────────────────────────────────────────────────────────
