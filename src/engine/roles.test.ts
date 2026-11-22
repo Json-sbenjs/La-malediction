@@ -1,0 +1,58 @@
+import { describe, expect, it } from 'vitest';
+import { ROLES, getRole, rolesQuiSeReveillent } from './roles';
+
+describe('registre des rôles', () => {
+  it("chaque entrée a l'id de sa clé", () => {
+    for (const [cle, role] of Object.entries(ROLES)) {
+      expect(role.id).toBe(cle);
+    }
+  });
+
+  it('respecte le nombre de cartes de la planche', () => {
+    expect(getRole('spectre').cartes).toBe(4);
+    expect(getRole('pelerin').cartes).toBe(6);
+    expect(getRole('trinite').cartes).toBe(3);
+    expect(getRole('oracle').cartes).toBe(1);
+  });
+
+  it('Sainte, Vipère et Usurpateur sont à usage unique', () => {
+    const uniques = Object.values(ROLES)
+      .filter((r) => r.usageUnique)
+      .map((r) => r.id)
+      .sort();
+    expect(uniques).toEqual(['sainte', 'usurpateur', 'vipere']);
+  });
+
+  it("Anathème, Adepte et Trinité peuvent changer de camp", () => {
+    const variables = Object.values(ROLES)
+      .filter((r) => r.campVariable)
+      .map((r) => r.id)
+      .sort();
+    expect(variables).toEqual(['adepte', 'anatheme', 'trinite']);
+  });
+
+  it("deux rôles d'une même nuit n'ont pas le même rang", () => {
+    for (const type of ['chaque-nuit', 'premiere-nuit'] as const) {
+      const rangs = Object.values(ROLES).flatMap((r) =>
+        r.reveil.type === type ? [r.reveil.rang] : [],
+      );
+      expect(new Set(rangs).size).toBe(rangs.length);
+    }
+  });
+});
+
+describe('ordre de réveil', () => {
+  it("nuit normale : la Courtisane d'abord, la Sainte après les Spectres", () => {
+    const ordre = rolesQuiSeReveillent(false).map((r) => r.id);
+    expect(ordre[0]).toBe('courtisane');
+    expect(ordre.indexOf('sainte')).toBeGreaterThan(ordre.indexOf('spectre'));
+    expect(ordre).not.toContain('anatheme');
+    expect(ordre).not.toContain('pelerin');
+  });
+
+  it('première nuit : reconnaissances et choix avant la nuit normale', () => {
+    const ordre = rolesQuiSeReveillent(true).map((r) => r.id);
+    expect(ordre.slice(0, 3)).toEqual(['trinite', 'anatheme', 'adepte']);
+    expect(ordre).toContain('spectre');
+  });
+});
