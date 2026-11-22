@@ -31,10 +31,14 @@ src/
 ├── engine/          moteur du jeu, TypeScript pur
 │   ├── types.ts     types de base : Joueur, Camp, RoleId, Phase, EtatPartie, Action
 │   ├── roles.ts     registre des rôles : camp, cartes, réveil, usage unique
-│   ├── plans.ts     plans de salle + validerPlan()
-│   └── *.test.ts    tests Vitest, à côté de chaque module
+│   └── plans.ts     plans de salle + validerPlan()
 └── web/             interface tablette (PWA avec Vite)
     └── main.ts
+tests/
+└── engine/          tests Vitest du moteur, un fichier par module
+    ├── roles.test.ts
+    ├── plans.test.ts
+    └── purete.test.ts   vérifie que le moteur reste pur
 asset/               planche des cartes (PDF)
 ```
 

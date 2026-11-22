@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { PLANS, compterRoles, trouverPlan, validerPlan, type Plan } from './plans';
-import type { RoleId } from './types';
+import { PLANS, compterRoles, trouverPlan, validerPlan, type Plan } from '../../src/engine/plans';
+import type { RoleId } from '../../src/engine/types';
 
 /** Fabrique un plan de test à partir d'une liste de rôles (siège 1, 2, 3…). */
 function planDeTest(roles: RoleId[], salle = 'Test'): Plan {

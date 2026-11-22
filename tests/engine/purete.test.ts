@@ -3,14 +3,14 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const DOSSIER = import.meta.dirname;
+const DOSSIER = join(import.meta.dirname, '../../src/engine');
 const INTERDITS = [
   /from ['"](node:)?(fs|readline|path|child_process)['"]/,
   /\bprocess\./,
   /\b(document|window|localStorage)\b/,
 ];
 
-const fichiers = readdirSync(DOSSIER).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'));
+const fichiers = readdirSync(DOSSIER).filter((f) => f.endsWith('.ts'));
 
 describe('moteur pur', () => {
   it.each(fichiers)("%s n'utilise ni Node ni le DOM", (fichier) => {

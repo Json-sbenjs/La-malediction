@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ROLES, getRole, rolesQuiSeReveillent } from './roles';
+import { ROLES, getRole, rolesQuiSeReveillent } from '../../src/engine/roles';
 
 describe('registre des rôles', () => {
   it("chaque entrée a l'id de sa clé", () => {
