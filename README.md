@@ -49,6 +49,7 @@ src/
 │   ├── vote.ts      élection de l'Alpha, vote du village (Alpha ×2)
 │   ├── victoire.ts  conditions de victoire
 │   ├── generateur.ts  salle sur mesure : composition conseillée, formes, tirage des rôles
+│   ├── historique.ts  annuler la dernière action (états précédents gardés)
 │   ├── outils.ts    petites fonctions partagées (trouverJoueur, vivants…)
 │   └── index.ts     porte d'entrée : creerPartie, etapeSuivante, appliquer
 └── web/             interface tablette (Vite)
@@ -64,6 +65,7 @@ tests/
     ├── nuit.test.ts, resolution-nuit.test.ts, mort.test.ts
     ├── vote.test.ts, victoire.test.ts, premiere-nuit.test.ts, trinite.test.ts
     ├── nouveaux-roles.test.ts   les 14 rôles ajoutés après la deadline
+    ├── historique.test.ts   annuler la dernière action
     ├── plans-demo.test.ts, generateur.test.ts
     ├── partie-complete.test.ts   ★ jalon : une partie du début à la victoire
     └── purete.test.ts   vérifie que le moteur reste pur
@@ -106,7 +108,7 @@ Deadline : le 27/12. On code d'abord les rôles qui sont sur les plans de salle.
 | S4 (14/12) | effets à la mort, première nuit, écrans tablette, Trinité ✅ |
 | S5 (21/12) | écrans tablette (installable, hors ligne) ✅, générateur de salle sur mesure ✅. Jalon : partie réelle sur iPad (à jouer) |
 
-Après la deadline : terminal de test, historique et annulation, et les autres rôles.
+Après la deadline : terminal de test. (Historique et annulation, les autres rôles : faits.)
 
 ## Rôles
 
