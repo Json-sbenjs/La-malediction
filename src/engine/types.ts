@@ -150,8 +150,22 @@ export interface EtatPartie {
 
 /** Ce que le MJ doit faire maintenant. Renvoyé par `etapeSuivante(etat)`. */
 export type Etape =
-  /** Début de la nuit d'explication : les rôles en jeu, à présenter à la table. */
-  | { type: 'presentation'; roles: { role: RoleId; nombre: number }[] }
+  /**
+   * Nuit d'explication, un rôle de la partie à la fois (rang = sa place, total = nombre de rôles en jeu).
+   * - presentation : le MJ explique le rôle, puis « passer » ;
+   * - reconnaissance : les `acteurs` se réveillent et se reconnaissent (Spectres, Doubles, Trinité), puis « passer » ;
+   * - choix : l'acteur désigne une cible (modèle de l'Anathème, mentor de l'Adepte).
+   */
+  | {
+      type: 'explication';
+      role: RoleId;
+      nombre: number;
+      rang: number;
+      total: number;
+      mode: 'presentation' | 'reconnaissance' | 'choix';
+      acteurs: JoueurId[];
+      ciblesPossibles: JoueurId[];
+    }
   | {
       type: 'reveil';
       role: RoleId;

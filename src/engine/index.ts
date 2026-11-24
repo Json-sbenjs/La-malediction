@@ -28,8 +28,8 @@ export function etapeSuivante(etat: EtatPartie): Etape {
   if (etat.decisions.length > 0) return etapeDecision(etat, etat.decisions[0]);
   switch (phase.type) {
     case 'explication':
-      // Jamais null ici : une explication finie passe tout de suite au jour 0 ou à la nuit 1.
-      return etapeExplication(etat, phase) ?? { type: 'presentation', roles: [] };
+      // Une explication finie passe tout de suite au jour 0 ou à la nuit 1 : jamais null ici.
+      return etapeExplication(etat, phase)!;
     case 'nuit':
       return etapeNuit(etat, phase);
     case 'jour':

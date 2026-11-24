@@ -74,9 +74,9 @@ export function demarrer(etat: EtatPartie, depart: Depart = {}): EtatPartie {
   let suivant = etat;
   while (suivant.phase.type === 'explication') {
     const etape = etapeSuivante(suivant);
-    if (etape.type === 'reveil' && etape.role === 'anatheme') {
+    if (etape.type === 'explication' && etape.role === 'anatheme') {
       suivant = appliquer(suivant, { type: 'anatheme-choisir-modele', cible: depart.modele ?? etape.ciblesPossibles[0] });
-    } else if (etape.type === 'reveil' && etape.role === 'adepte') {
+    } else if (etape.type === 'explication' && etape.role === 'adepte') {
       suivant = appliquer(suivant, { type: 'adepte-choisir-mentor', cible: depart.mentor ?? etape.ciblesPossibles[0] });
     } else {
       suivant = appliquer(suivant, { type: 'passer' });

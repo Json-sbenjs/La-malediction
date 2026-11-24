@@ -215,10 +215,11 @@ describe('Doubles', () => {
 
   it("se reconnaissent pendant la nuit d'explication", () => {
     let etat = creerPartie(planDeTest(ROLES));
-    etat = appliquer(appliquer(etat, { type: 'passer' }), { type: 'passer' }); // présentation, Spectres
-    expect(etapeSuivante(etat)).toMatchObject({ role: 'doubles', acteurs: [1, 2] });
+    // Rôles en jeu dans l'ordre : Spectre, Pèlerin, Doubles.
+    etat = appliquer(appliquer(etat, { type: 'passer' }), { type: 'passer' });
+    expect(etapeSuivante(etat)).toMatchObject({ role: 'doubles', mode: 'reconnaissance', acteurs: [1, 2] });
     etat = appliquer(etat, { type: 'passer' });
-    expect(etat.infoMJ).toBe('Doubles : siège 1, siège 2');
+    expect(etat.infoMJ).toBe('Les Doubles : siège 1, siège 2');
   });
 
   it('à la 1re mort, la survivante passe Pèlerins', () => {

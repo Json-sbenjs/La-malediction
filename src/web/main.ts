@@ -217,6 +217,8 @@ function titrePhase(etat: EtatPartie): string {
 /** Sièges que le MJ peut toucher à cette étape. */
 function siegesActifs(etape: Etape): JoueurId[] {
   switch (etape.type) {
+    case 'explication':
+      return etape.ciblesPossibles;
     case 'reveil':
       return modeSaisie(etape.role, enExplication()).type === 'cibles' ? etape.ciblesPossibles : [];
     case 'decision':
@@ -282,7 +284,7 @@ function ecranChoix(): string {
 function siege(j: Joueur, etape: Etape, actifs: JoueurId[], compte: Record<JoueurId, number>): string {
   const pos = ui.plan?.sieges.find((s) => s.numero === j.id)?.position ?? { x: 50, y: 50 };
   const etat = ui.etat!;
-  const acteur = etape.type === 'reveil' && etape.acteurs.includes(j.id);
+  const acteur = (etape.type === 'reveil' || etape.type === 'explication') && etape.acteurs.includes(j.id);
   const classes = [
     'siege',
     `camp-${j.camp}`,
@@ -324,8 +326,41 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
   const valider = (pret: boolean) => bouton('Valider', `data-valider ${pret ? '' : 'disabled'}`, 'principal');
 
   switch (etape.type) {
-    case 'presentation':
-      return ''; // écran à part : ecranPresentation
+    case 'explication': {
+      const def = ROLES[etape.role];
+      const camp = def.campVariable && def.camp === 'pelerins' ? 'Variable' : NOM_CAMP_ROLE[def.camp];
+      const contexte = {
+        explication: true,
+        augure: false,
+        maudit: etat.joueurs.some((j) => j.role === 'maudit'),
+      };
+      // Pour la meute (Spectre, Originel ou Maudit qui lance la reconnaissance), la consigne des Spectres.
+      const consigne =
+        etape.mode === 'reconnaissance' && ['spectre', 'originel', 'maudit'].includes(etape.role)
+          ? consigneReveil('spectre', contexte)
+          : etape.mode === 'presentation'
+            ? 'Explique ce rôle à la table.'
+            : consigneReveil(etape.role, contexte);
+      const qui = etape.acteurs.length > 0 ? `<p class="qui">${etape.acteurs.length > 1 ? 'Joueurs' : 'Joueur'} : ${etape.acteurs.map(nom).join(', ')}</p>` : '';
+      const saisie =
+        etape.mode === 'choix'
+          ? `<p>Touche un siège sur le plan. Choix : <strong>${choisis}</strong></p>
+             <div class="boutons">${valider(ui.selection.length === 1)}</div>`
+          : `<div class="boutons">${bouton(
+              etape.mode === 'reconnaissance' ? 'Reconnaissance faite' : etape.rang === etape.total ? 'Terminer' : 'Rôle suivant',
+              'data-passer',
+              'principal',
+            )}</div>`;
+      return `
+        <p class="progression">Rôle ${etape.rang} sur ${etape.total}</p>
+        ${illustration(etape.role, def.nom)}
+        <h2 class="titre-role">${echapper(def.nom)}${etape.nombre > 1 ? ` <span class="nombre">× ${etape.nombre}</span>` : ''}</h2>
+        <p class="camp-role">${camp}</p>
+        <p class="regle">${echapper(def.description)}</p>
+        <p class="consigne">${consigne}</p>
+        ${qui}
+        ${saisie}`;
+    }
     case 'reveil': {
       const contexte = {
         explication: etat.phase.type === 'explication',
@@ -517,42 +552,9 @@ function ecranRevelation(id: JoueurId): string {
     </main>`;
 }
 
-/** Début de la nuit d'explication : les rôles en jeu, à présenter à la table. */
-function ecranPresentation(roles: { role: RoleId; nombre: number }[]): string {
-  const cartes = roles
-    .map(({ role, nombre }) => {
-      const def = ROLES[role];
-      return `
-        <li class="carte-role camp-${def.camp}">
-          <img src="${image(role)}" alt="">
-          <div>
-            <h3>${echapper(def.nom)}${nombre > 1 ? ` <span class="nombre">× ${nombre}</span>` : ''}</h3>
-            <p class="camp-role">${def.campVariable && def.camp === 'pelerins' ? 'Variable' : NOM_CAMP_ROLE[def.camp]}</p>
-            <p>${echapper(def.description)}</p>
-          </div>
-        </li>`;
-    })
-    .join('');
-  return `
-    <header class="barre">
-      <span class="phase">${titrePhase(ui.etat!)}</span>
-      ${bouton('Quitter', 'data-quitter', 'discret')}
-    </header>
-    <main class="presentation">
-      <div class="presentation-tete">
-        <h1>Les rôles en jeu</h1>
-        <p class="consigne">Présente chaque rôle à la table. Ensuite viennent les reconnaissances : Spectres, Doubles,
-          Trinité, puis le modèle de l'Anathème et le mentor de l'Adepte. Personne ne meurt cette nuit.</p>
-      </div>
-      <ul class="cartes-roles">${cartes}</ul>
-      <div class="boutons">${bouton('Commencer les réveils', 'data-passer', 'principal')}</div>
-    </main>`;
-}
-
 function ecranPartie(): string {
   const etat = ui.etat!;
   const etape = etapeSuivante(etat);
-  if (etape.type === 'presentation') return ecranPresentation(etape.roles);
   const actifs = siegesActifs(etape);
   let compte: Record<JoueurId, number> = {};
   if (etape.type === 'vote') {
@@ -638,6 +640,10 @@ function valider(): void {
   const etape = etapeSuivante(ui.etat!);
   const [cible] = ui.selection;
   switch (etape.type) {
+    case 'explication':
+      if (etape.role === 'anatheme') jouer({ type: 'anatheme-choisir-modele', cible });
+      if (etape.role === 'adepte') jouer({ type: 'adepte-choisir-mentor', cible });
+      return;
     case 'reveil': {
       const mode = modeSaisie(etape.role, enExplication());
       if (mode.type === 'cibles') jouer(mode.action(ui.selection));

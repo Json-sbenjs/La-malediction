@@ -1,15 +1,16 @@
-// Nuit d'explication (« première nuit » du FigJam), avant que la partie commence :
-// 1. le MJ présente tous les rôles en jeu ;
-// 2. reconnaissances : les Spectres (avec l'Originel et le Maudit), les Doubles, la Trinité ;
-// 3. l'Anathème choisit son modèle, l'Adepte son mentor.
+// Nuit d'explication (« première nuit » du FigJam), avant que la partie commence.
+// Le MJ passe les rôles de la partie un par un (seulement ceux qui sont en jeu) :
+// - il explique chaque rôle à la table ;
+// - au passage des Spectres, des Doubles et de la Trinité, ils se réveillent et se reconnaissent ;
+// - au passage de l'Anathème et de l'Adepte, ils choisissent leur modèle ou leur mentor.
 // Personne ne meurt. Ensuite : jour 0 (élection de l'Alpha), puis la première vraie nuit.
 import { debutDeNuit } from './nuit';
 import { nomJoueur, trouverJoueur, verifierCible, vivants } from './outils';
-import { ROLES, rolesDeLExplication } from './roles';
+import { ROLES } from './roles';
 import type { Action, Etape, EtatPartie, JoueurId, RoleId } from './types';
 
 type PhaseExplication = Extract<EtatPartie['phase'], { type: 'explication' }>;
-type EtapeReveil = Extract<Etape, { type: 'reveil' }>;
+type EtapeExplication = Extract<Etape, { type: 'explication' }>;
 
 /** Rôles qui doivent faire un choix (pas le droit de « passer »). */
 const CHOIX: Partial<Record<RoleId, Action['type']>> = {
@@ -17,10 +18,10 @@ const CHOIX: Partial<Record<RoleId, Action['type']>> = {
   adepte: 'adepte-choisir-mentor',
 };
 
-/** Groupes qui se reconnaissent : le MJ valide avec « passer ». */
-const GROUPES: Partial<Record<RoleId, string>> = { spectre: 'Spectres', doubles: 'Doubles', trinite: 'Trinité' };
+/** Rôles du camp Spectres qui se réveillent ensemble ; le premier présent de la liste lance la reconnaissance. */
+const FAMILLE_SPECTRES: RoleId[] = ['spectre', 'originel', 'maudit'];
 
-/** Les rôles en jeu et leur nombre, dans l'ordre du registre (écran de présentation). */
+/** Les rôles en jeu et leur nombre, dans l'ordre du registre (Spectres d'abord). */
 export function rolesEnJeu(etat: EtatPartie): { role: RoleId; nombre: number }[] {
   const compte = new Map<RoleId, number>();
   for (const j of etat.joueurs) compte.set(j.role, (compte.get(j.role) ?? 0) + 1);
@@ -29,80 +30,76 @@ export function rolesEnJeu(etat: EtatPartie): { role: RoleId; nombre: number }[]
     .map((role) => ({ role, nombre: compte.get(role)! }));
 }
 
-/** Ordre des réveils de la nuit d'explication : Spectres d'abord, puis Doubles, Trinité, Anathème, Adepte. */
-export function ordreExplication(etat: EtatPartie): RoleId[] {
-  const presents = new Set(etat.joueurs.map((j) => j.role));
-  const ordre: RoleId[] = [];
-  if (etat.joueurs.some((j) => j.camp === 'spectres' || j.role === 'maudit')) ordre.push('spectre');
-  for (const r of rolesDeLExplication()) if (presents.has(r.id)) ordre.push(r.id);
-  return ordre;
-}
-
-/** Qui se réveille : pour les Spectres, tout le camp et le Maudit (qui fait semblant d'en être). */
-function membres(etat: EtatPartie, role: RoleId): JoueurId[] {
-  return vivants(etat)
-    .filter((j) => (role === 'spectre' ? j.camp === 'spectres' || j.role === 'maudit' : j.role === role))
+/** Ce que fait le rôle pendant l'explication, et qui se réveille. */
+function deroule(etat: EtatPartie, role: RoleId): { mode: EtapeExplication['mode']; acteurs: JoueurId[] } {
+  const porteurs = vivants(etat)
+    .filter((j) => j.role === role)
     .map((j) => j.id);
-}
+  if (CHOIX[role]) return { mode: 'choix', acteurs: porteurs };
+  if (role === 'doubles' || role === 'trinite') return { mode: 'reconnaissance', acteurs: porteurs };
 
-/** Modèle / mentor : n'importe quel autre joueur (un Spectre compris). */
-function cibles(etat: EtatPartie, role: RoleId, quiAgit: JoueurId[]): JoueurId[] {
-  if (!CHOIX[role]) return [];
-  return vivants(etat)
-    .filter((j) => !quiAgit.includes(j.id))
-    .map((j) => j.id);
-}
-
-/** Prochain réveil à partir de `phase.etape` (l'étape 0 est la présentation des rôles). */
-function trouverReveil(etat: EtatPartie, phase: PhaseExplication): { index: number; etape: EtapeReveil } | null {
-  const ordre = ordreExplication(etat);
-  for (let index = Math.max(0, phase.etape - 1); index < ordre.length; index++) {
-    const role = ordre[index];
-    const quiAgit = membres(etat, role);
-    if (quiAgit.length > 0) {
-      return { index, etape: { type: 'reveil', role, acteurs: quiAgit, ciblesPossibles: cibles(etat, role, quiAgit) } };
-    }
+  const premierSpectre = FAMILLE_SPECTRES.find((r) => etat.joueurs.some((j) => j.role === r));
+  if (role === premierSpectre) {
+    // Tout le camp Spectres se reconnaît, avec le Maudit qui fait semblant d'en être.
+    const meute = vivants(etat)
+      .filter((j) => j.camp === 'spectres' || j.role === 'maudit')
+      .map((j) => j.id);
+    return { mode: 'reconnaissance', acteurs: meute };
   }
-  return null;
+  return { mode: 'presentation', acteurs: porteurs };
 }
 
-/** Étape en cours de la nuit d'explication, ou null si elle est finie. */
-export function etapeExplication(etat: EtatPartie, phase: PhaseExplication): Etape | null {
-  if (phase.etape === 0) return { type: 'presentation', roles: rolesEnJeu(etat) };
-  return trouverReveil(etat, phase)?.etape ?? null;
+/** Étape en cours de la nuit d'explication, ou null si tous les rôles ont été passés. */
+export function etapeExplication(etat: EtatPartie, phase: PhaseExplication): EtapeExplication | null {
+  const roles = rolesEnJeu(etat);
+  const enCours = roles[phase.etape];
+  if (!enCours) return null;
+  const { mode, acteurs } = deroule(etat, enCours.role);
+  const ciblesPossibles =
+    mode === 'choix'
+      ? vivants(etat)
+          .filter((j) => !acteurs.includes(j.id))
+          .map((j) => j.id)
+      : [];
+  return {
+    type: 'explication',
+    role: enCours.role,
+    nombre: enCours.nombre,
+    rang: phase.etape + 1,
+    total: roles.length,
+    mode,
+    acteurs,
+    ciblesPossibles,
+  };
 }
 
 /** Applique l'action du MJ pendant la nuit d'explication. */
 export function appliquerExplication(etat: EtatPartie, phase: PhaseExplication, action: Action): EtatPartie {
+  const etape = etapeExplication(etat, phase);
+  if (!etape) throw new Error("La nuit d'explication est finie");
   let suivant: EtatPartie = structuredClone(etat);
   suivant.infoMJ = null;
+  const nomRole = ROLES[etape.role].nom;
 
-  if (phase.etape === 0) {
-    if (action.type !== 'passer') throw new Error('Présente les rôles, puis continue avec « passer »');
-    suivant.phase = { type: 'explication', etape: 1 };
-  } else {
-    const trouve = trouverReveil(etat, phase);
-    if (!trouve) throw new Error("La nuit d'explication est finie");
-    const { index, etape } = trouve;
-    const nomRole = ROLES[etape.role].nom;
-    const attendue = CHOIX[etape.role];
-
-    if (attendue) {
-      if (action.type !== attendue) throw new Error(`${nomRole} doit faire son choix`);
-      if (action.type !== 'anatheme-choisir-modele' && action.type !== 'adepte-choisir-mentor') return etat;
-      verifierCible(etape.ciblesPossibles, action.cible, nomRole);
-      const acteur = trouverJoueur(suivant, etape.acteurs[0]);
-      acteur.memoire.lien = action.cible;
-      const quoi = etape.role === 'anatheme' ? 'modèle' : 'mentor';
-      suivant.infoMJ = `${nomJoueur(acteur)} a choisi pour ${quoi} ${nomJoueur(trouverJoueur(suivant, action.cible))}`;
-    } else {
-      if (action.type !== 'passer') throw new Error(`${nomRole} : reconnaissance, continue avec « passer »`);
-      const noms = etape.acteurs.map((id) => nomJoueur(trouverJoueur(suivant, id))).join(', ');
-      suivant.infoMJ = `${GROUPES[etape.role] ?? nomRole} : ${noms}`;
+  if (etape.mode === 'choix') {
+    if (action.type !== 'anatheme-choisir-modele' && action.type !== 'adepte-choisir-mentor') {
+      throw new Error(`${nomRole} doit faire son choix`);
     }
-    suivant.phase = { type: 'explication', etape: index + 2 };
+    if (action.type !== CHOIX[etape.role]) throw new Error(`C'est au tour de ${nomRole}`);
+    verifierCible(etape.ciblesPossibles, action.cible, nomRole);
+    const acteur = trouverJoueur(suivant, etape.acteurs[0]);
+    acteur.memoire.lien = action.cible;
+    const quoi = etape.role === 'anatheme' ? 'modèle' : 'mentor';
+    suivant.infoMJ = `${nomJoueur(acteur)} a choisi pour ${quoi} ${nomJoueur(trouverJoueur(suivant, action.cible))}`;
+  } else {
+    if (action.type !== 'passer') throw new Error(`${nomRole} : explication et reconnaissance, continue avec « passer »`);
+    if (etape.mode === 'reconnaissance') {
+      const groupe = FAMILLE_SPECTRES.includes(etape.role) ? 'Spectres' : nomRole;
+      suivant.infoMJ = `${groupe} : ${etape.acteurs.map((id) => nomJoueur(trouverJoueur(suivant, id))).join(', ')}`;
+    }
   }
 
+  suivant.phase = { type: 'explication', etape: phase.etape + 1 };
   if (etapeExplication(suivant, suivant.phase as PhaseExplication) === null) suivant = finExplication(suivant);
   return suivant;
 }

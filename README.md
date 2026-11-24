@@ -73,8 +73,9 @@ asset/               planche des cartes (PDF)
 
 ### Principe
 
-Déroulé d'une partie : **nuit d'explication** (présentation des rôles en jeu, reconnaissances des Spectres, Doubles et
-Trinité, modèle de l'Anathème, mentor de l'Adepte, personne ne meurt) → **élection de l'Alpha** (le maire) →
+Déroulé d'une partie : **nuit d'explication** (les rôles de la partie, un par un : le MJ explique chacun ; au passage
+des Spectres, Doubles et Trinité, ils se reconnaissent ; l'Anathème et l'Adepte choisissent modèle et mentor ;
+personne ne meurt) → **élection de l'Alpha** (le maire) →
 **première nuit** → jour 1 (vote) → nuit 2…
 
 Le moteur est une **machine à états** : l'état de la partie plus une action du MJ donnent un nouvel état. L'interface ne fait qu'afficher l'étape suivante et renvoyer les choix du MJ au moteur.
