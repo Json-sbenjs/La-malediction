@@ -79,10 +79,9 @@ Un enrôlé ne peut jamais viser le Sectaire avec son pouvoir.
 
 1. Annonce des morts (rôles révélés) et de la marque de l'Inquisiteur.
 2. S'il n'y a pas d'Alpha en vie : élection de l'Alpha.
-3. **Les morts, les jours pairs** (2, 4, 6…), s'il y en a : le MJ choisit **pour tous** s'ils parlent ou s'ils votent ce jour-là.
-   - « voter » : chaque mort a 1 voix (contre un vivant), et ils se taisent ;
-   - « parler » : ils prennent part à la discussion, mais ne votent pas.
-   Les jours impairs, les morts se taisent et ne votent pas. Le choix vaut pour la journée (second vote du Bourreau compris).
+3. **Les morts** :
+   - **jours pairs** (2, 4, 6…) : ils **votent**, 1 voix chacun, uniquement contre un vivant (second vote du Bourreau compris) ;
+   - **jours impairs** (1, 3, 5…) : ils **parlent** pendant la discussion, mais ne votent pas.
 4. Discussion, puis **vote du village** : l'Alpha compte double, le joueur marqué part avec une voix, une égalité en tête n'élimine personne.
    Le MJ peut aussi faire un **vote rapide** (il désigne directement l'éliminé).
 5. **Sacrifié** : il peut mourir à la place du condamné (une fois).
@@ -100,4 +99,4 @@ Un enrôlé ne peut jamais viser le Sectaire avec son pouvoir.
 ## Écarts encore ouverts
 
 - **FigJam à mettre à jour** (bloqué par la limite d'appels Figma du forfait Starter) : nuit d'explication rôle par rôle, ordre de la Nuit Type ci-dessus, Nécromancien confirmé (à placer après l'Envoûteur), bloc « si l'Oracle en vie » de l'Originel à renommer, Sainte qui « sauve la victime », bloc de l'Adepte (« mentor » et non « modèle »), Usurpateur avant les autres effets, successeur de l'Alpha, Sacrifié, Bourreau, vote rapide, dissolution Trinité / Doubles, Sectaire, test de victoire après la nuit, sections « architecture du code » et « planning » à jour.
-- **FigJam, aussi** : la question « l'Augure a-t-elle été vue ? » (rang 57) et le choix des morts les jours pairs (le MJ décide pour tous : parler ou voter).
+- **FigJam, aussi** : la question « l'Augure a-t-elle été vue ? » (rang 57) et les morts (ils votent les jours pairs, parlent les jours impairs).

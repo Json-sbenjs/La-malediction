@@ -47,60 +47,62 @@ describe('Augure', () => {
   });
 });
 
-describe('vote des morts (jours pairs)', () => {
+describe('vote des morts : ils votent les jours pairs, parlent les jours impairs', () => {
   // 1-2 Spectres, 3-10 : Oracle, Protecteur et 6 Pèlerins
   const PLAN = planDeTest(['spectre', 'spectre', 'oracle', 'protecteur', ...pelerins(6)]);
 
-  /** Jour 1 avec un mort la nuit (siège 10), vote rapide contre le siège 9, puis nuit 2 sans mort : jour 2. */
-  function auJour2(): EtatPartie {
-    let etat = finirNuit(nouvellePartie(PLAN, [], { alpha: 3 }), { spectre: { type: 'spectres-attaquer', cible: 10 } });
-    etat = appliquer(etat, { type: 'eliminer', cible: 9 });
-    return finirNuit(etat);
+  /** Jour 1 avec un mort la nuit (siège 10). */
+  function auJour1(): EtatPartie {
+    return finirNuit(nouvellePartie(PLAN, [], { alpha: 3 }), { spectre: { type: 'spectres-attaquer', cible: 10 } });
   }
 
-  it("le jour 1 (impair), pas de question : on vote directement, sans les morts", () => {
-    const etat = finirNuit(nouvellePartie(PLAN, [], { alpha: 3 }), { spectre: { type: 'spectres-attaquer', cible: 10 } });
+  /** Puis vote rapide contre le siège 9, et nuit 2 sans mort : jour 2, deux morts (9 et 10). */
+  function auJour2(): EtatPartie {
+    return finirNuit(appliquer(auJour1(), { type: 'eliminer', cible: 9 }));
+  }
+
+  it('jour 1 (impair) : les morts ne votent pas', () => {
+    const etat = auJour1();
     const etape = etapeSuivante(etat);
     expect(etape).toMatchObject({ type: 'vote', numero: 1 });
     if (etape.type === 'vote') expect(etape.votants).not.toContain(10);
+    expect(() => compterVotes(etat, { 10: 5 })).toThrow(/ne peut pas voter/);
   });
 
-  it('le jour 2 (pair), le MJ choisit pour tous les morts avant le vote', () => {
-    expect(etapeSuivante(auJour2())).toEqual({ type: 'morts-du-jour', numero: 2, morts: [9, 10] });
-    expect(() => appliquer(auJour2(), { type: 'eliminer', cible: 5 })).toThrow(/morts parlent ou votent/);
-  });
-
-  it('« voter » : les morts votent (1 voix chacun), contre un vivant seulement', () => {
-    const etat = appliquer(auJour2(), { type: 'morts-du-jour', choix: 'voter' });
-    expect(etat.infoMJ).toBe("Aujourd'hui, les morts votent (1 voix chacun) et se taisent");
+  it('jour 2 (pair) : les morts votent directement, sans question du MJ', () => {
+    const etat = auJour2();
     const etape = etapeSuivante(etat);
     expect(etape).toMatchObject({ type: 'vote', numero: 2 });
     if (etape.type === 'vote') {
       expect(etape.votants).toEqual(expect.arrayContaining([9, 10]));
+      // On ne vote que contre un vivant.
       expect(etape.ciblesPossibles).not.toContain(9);
     }
+  });
+
+  it('jour pair : 1 voix par mort, contre un vivant seulement', () => {
+    const etat = auJour2();
     // 2 morts + 1 vivant contre le siège 5, l'Alpha (2 voix) contre le siège 6 : le siège 5 part.
     expect(compterVotes(etat, { 9: 5, 10: 5, 4: 5, 3: 6 })).toEqual({ compte: { 5: 3, 6: 2 }, elimine: 5 });
     expect(() => compterVotes(etat, { 4: 10 })).toThrow(/ne peut pas viser/);
   });
 
-  it('« parler » : les morts ne votent pas', () => {
-    const etat = appliquer(auJour2(), { type: 'morts-du-jour', choix: 'parler' });
-    const etape = etapeSuivante(etat);
-    if (etape.type === 'vote') expect(etape.votants).not.toContain(10);
+  it('jour 3 (impair) : les morts ne votent plus', () => {
+    let etat = appliquer(auJour2(), { type: 'passer' });
+    etat = finirNuit(etat);
+    expect(etat.phase).toEqual({ type: 'jour', numero: 3 });
     expect(() => compterVotes(etat, { 10: 5 })).toThrow(/ne peut pas voter/);
   });
 
-  it('le choix vaut pour la journée, puis repart à zéro la nuit', () => {
-    let etat = appliquer(auJour2(), { type: 'morts-du-jour', choix: 'voter' });
-    etat = appliquer(etat, { type: 'passer' });
-    expect(etat.voteDesMorts).toBeNull();
-    expect(etat.phase).toMatchObject({ type: 'nuit', numero: 3 });
-  });
-
-  it('jour pair sans aucun mort : pas de question', () => {
-    let etat = finirNuit(nouvellePartie(PLAN, [], { alpha: 3 }));
-    etat = finirNuit(appliquer(etat, { type: 'passer' }));
+  it('second vote du Bourreau un jour pair : les morts votent encore', () => {
+    const plan = planDeTest(['spectre', 'spectre', 'bourreau', 'protecteur', ...pelerins(6)]);
+    let etat = finirNuit(nouvellePartie(plan, [], { alpha: 4 }), { spectre: { type: 'spectres-attaquer', cible: 10 } });
+    etat = appliquer(etat, { type: 'eliminer', cible: 9 });
+    etat = appliquer(etat, { type: 'second-vote', accepter: false });
+    etat = finirNuit(etat);
+    etat = appliquer(etat, { type: 'eliminer', cible: 8 });
+    etat = appliquer(etat, { type: 'second-vote', accepter: true });
     expect(etapeSuivante(etat)).toMatchObject({ type: 'vote', numero: 2 });
+    expect(compterVotes(etat, { 10: 5 }).elimine).toBe(5);
   });
 });
