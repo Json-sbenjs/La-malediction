@@ -1,0 +1,98 @@
+# Déroulé d'une partie
+
+Ce document reprend le diagramme de flux du FigJam **malediction**
+(https://www.figma.com/board/xRPHkwHb3IT2knM3Vhf3ff, section « diagrame de flux »).
+Le FigJam, ce document et le code (`src/engine/`) doivent dire la même chose.
+
+Déroulé : **mise en place → nuit d'explication → élection de l'Alpha (jour 0) → nuit 1 → jour 1 → nuit 2 → …**
+La victoire est vérifiée après chaque action du MJ qui peut tuer quelqu'un (fin de nuit, vote, effets de mort).
+
+## 1. Mise en place — `mise-en-place.ts`, `generateur.ts`
+
+1. Le MJ choisit la salle et le nombre de joueurs, ce qui charge un **plan de salle** (un rôle par siège).
+   Il peut aussi utiliser la **salle sur mesure** : composition conseillée, forme de la salle (tour de table, table rectangulaire, U) et tirage des rôles.
+2. Prénoms des joueurs : facultatifs.
+3. Si le **Dévoué** est en jeu, le MJ montre sa carte à tout le monde.
+4. Si l'**Alpha** est une carte posée sur un siège, son porteur est Alpha d'office.
+
+## 2. Nuit d'explication — `premiere-nuit.ts`
+
+Le MJ passe **un rôle à la fois**, et **seulement les rôles en jeu**, dans l'ordre où ils agiront. Personne ne meurt.
+
+| Ordre | Rôles | Ce qui se passe |
+| --- | --- | --- |
+| 1 | la meute : Spectre, Originel, Maudit (le premier présent) | toute la meute se réveille et se reconnaît (le Maudit fait semblant d'en être) |
+| 2 | Doubles, Trinité | les membres se réveillent et se reconnaissent |
+| 3 | Anathème, Adepte | choisissent en secret leur modèle ou leur mentor (choix obligatoire) |
+| 4 | rôles de la nuit, dans l'ordre de la Nuit Type (§ 3) | le MJ explique le rôle |
+| 5 | Pèlerin, Dévoué, Alpha, Main Noire, Usurpateur, Sacrifié, Bourreau | rôles sans réveil (le jour, les morts) : le MJ les explique |
+
+- Pour un groupe d'habitués, le bouton **« passer toute l'explication »** saute la nuit d'explication : pas de reconnaissance, pas de modèle ni de mentor.
+- À la fin : **élection de l'Alpha** (jour 0), qu'on peut repousser au jour 1 (« élire plus tard »). Si l'Alpha est une carte, on va directement à la nuit 1.
+
+## 3. Nuit Type — `nuit.ts`
+
+Seuls les rôles en jeu sont appelés. Pour chaque rôle, dans cet ordre : **si en vie → si occupé → condition propre → action**.
+Un rôle sans joueur qui peut agir (mort, occupé, pouvoir perdu ou déjà utilisé) est sauté.
+
+| Rang | Rôle | Condition propre | Action |
+| --- | --- | --- | --- |
+| 10 | Courtisane | — | occupe un joueur (pas le même deux nuits de suite) |
+| 20 | Protecteur | — | protège un joueur (pas le même deux nuits de suite) |
+| 30 | Oracle | — | voit le rôle d'un joueur |
+| 33 | Médium | au moins un mort | pointe un mort puis un vivant ; le mort mime |
+| 36 | Inquisiteur | — | marque un joueur : une voix contre lui au vote du lendemain |
+| 40 | Instinct | pouvoir pas perdu | désigne 3 joueurs : s'il n'y a aucun Spectre, il perd son pouvoir |
+| 45 | Enchanteur | sort pas utilisé, veut l'utiliser | endort les Spectres (ni Spectres, ni Originel, ni Maudit cette nuit) |
+| 50 | Spectres | pas endormis | désignent une victime |
+| 52 | Originel | sort pas utilisé, il y a une victime | transforme la victime en Spectre au lieu de la tuer |
+| 55 | Maudit | nuit paire, pas endormi | peut tuer un Spectre |
+| 57 | Augure | — | espionne les Spectres ; si elle est vue, elle meurt — **à coder** |
+| 60 | Sainte | sort pas utilisé, il y a une victime | sauve la victime des Spectres |
+| 70 | Vipère | sort pas utilisé | empoisonne un joueur |
+| 80 | Sectaire | — | enrôle un joueur non enrôlé ; le MJ lui montre le Sectaire |
+| 85 | Envoûteur | — | charme 2 joueurs |
+| 90 | Nécromancien | sort pas utilisé, au moins un mort | ressuscite un mort en Revenant ; le MJ lui montre le Nécromancien |
+
+Un enrôlé ne peut jamais viser le Sectaire avec son pouvoir.
+
+## 4. Fin de nuit — `resolution-nuit.ts`
+
+- La victime des Spectres meurt, sauf si elle est protégée ou sauvée par la Sainte.
+- Le Spectre visé par le Maudit meurt, sauf s'il est protégé.
+- L'empoisonné meurt (la protection ne bloque pas le poison).
+- La victime de l'Originel devient Spectre en secret, sauf si elle est protégée.
+- Puis : effets de mort (§ 5) et test de victoire.
+
+## 5. Effets de mort — `mort.ts`
+
+À chaque mort, le rôle est révélé, puis :
+
+1. **Automatique** : la Trinité ou les Doubles se dissolvent (les survivants passent Pèlerins) ; si le Sectaire meurt, ses enrôlés sont libérés ; l'**Anathème** dont le modèle meurt passe Spectre ; l'**Adepte** dont le mentor meurt prend son rôle et son camp, avec les pouvoirs remis à neuf.
+2. **Usurpateur en premier** (s'il est en vie et n'a pas encore servi) : il peut prendre le rôle du mort. S'il le prend, l'effet de mort de ce rôle ne se déclenche pas.
+3. **Main Noire** (si l'Usurpateur n'a pas pris son rôle) : elle emporte un joueur.
+4. **Alpha** : s'il meurt, il désigne son successeur (ou le village réélit).
+
+## 6. Jour — `vote.ts`
+
+1. Annonce des morts (rôles révélés) et de la marque de l'Inquisiteur.
+2. S'il n'y a pas d'Alpha en vie : élection de l'Alpha.
+3. Discussion, puis **vote du village** : l'Alpha compte double, le joueur marqué part avec une voix, une égalité en tête n'élimine personne.
+   Le MJ peut aussi faire un **vote rapide** (il désigne directement l'éliminé).
+   Les morts peuvent, **un jour sur deux**, soit parler soit voter — **à coder** (aujourd'hui seuls les vivants votent).
+4. **Sacrifié** : il peut mourir à la place du condamné (une fois).
+5. Effets de mort du condamné (§ 5), puis test de victoire.
+6. **Bourreau** : une fois dans la partie, il peut déclencher un second vote le même jour.
+7. Sinon, on passe à la nuit suivante.
+
+## 7. Victoire — `victoire.ts`
+
+- **Sectaire** : en vie, et tous les autres vivants sont enrôlés.
+- **Envoûteur** : en vie, et tous les autres vivants sont charmés.
+- Sinon, un camp gagne quand tous les vivants en font partie : Pèlerins, Spectres, Trinité ou Doubles encore soudées, Maudit (seul survivant), Nécromancien (seul ou avec son Revenant ; le Revenant seul ne gagne pas).
+- Tout le monde mort : personne ne gagne.
+
+## Écarts encore ouverts
+
+- **FigJam à mettre à jour** (bloqué par la limite d'appels Figma du forfait Starter) : nuit d'explication rôle par rôle, ordre de la Nuit Type ci-dessus, Nécromancien confirmé (à placer après l'Envoûteur), bloc « si l'Oracle en vie » de l'Originel à renommer, Sainte qui « sauve la victime », bloc de l'Adepte (« mentor » et non « modèle »), Usurpateur avant les autres effets, successeur de l'Alpha, Sacrifié, Bourreau, vote rapide, dissolution Trinité / Doubles, Sectaire, test de victoire après la nuit, sections « architecture du code » et « planning » à jour.
+- **Code à faire** : réveil de l'Augure ; vote des morts un jour sur deux.
