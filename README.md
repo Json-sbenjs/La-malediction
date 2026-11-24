@@ -63,6 +63,7 @@ tests/
     ├── roles.test.ts, plans.test.ts, mise-en-place.test.ts
     ├── nuit.test.ts, resolution-nuit.test.ts, mort.test.ts
     ├── vote.test.ts, victoire.test.ts, premiere-nuit.test.ts, trinite.test.ts
+    ├── nouveaux-roles.test.ts   les 14 rôles ajoutés après la deadline
     ├── plans-demo.test.ts, generateur.test.ts
     ├── partie-complete.test.ts   ★ jalon : une partie du début à la victoire
     └── purete.test.ts   vérifie que le moteur reste pur
@@ -101,9 +102,16 @@ Deadline : le 27/12. On code d'abord les rôles qui sont sur les plans de salle.
 
 Après la deadline : terminal de test, historique et annulation, et les autres rôles.
 
-## Rôles déjà dans le registre
+## Rôles
 
-Spectre, Pèlerin, Oracle, Protecteur, Courtisane, Instinct, Sainte, Vipère, Main Noire, Anathème, Adepte, Usurpateur, Alpha, Trinité.
+Les 28 cartes du jeu sont codées (`src/engine/roles.ts`) :
+
+- **Pèlerins** : Pèlerin, Dévoué, Oracle, Protecteur, Courtisane, Instinct, Sainte, Vipère, Main Noire, Augure, Médium,
+  Inquisiteur, Enchanteur, Sacrifié, Bourreau, Usurpateur, Alpha.
+- **Spectres** : Spectre, Originel.
+- **Camp variable** : Anathème, Adepte.
+- **Groupes solitaires qui deviennent Pèlerins** : Trinité, Doubles.
+- **Solitaires** : Maudit, Sectaire, Envoûteur, Nécromancien (et son Revenant, créé en cours de partie).
 
 ## Branches
 

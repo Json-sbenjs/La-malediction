@@ -43,6 +43,8 @@ export function nouveauGenerateur(): EtatGenerateur {
 const ORDRE_ROLES: RoleId[] = [
   'spectre', 'pelerin', 'oracle', 'protecteur', 'sainte', 'courtisane', 'instinct', 'vipere',
   'main-noire', 'anatheme', 'adepte', 'usurpateur', 'trinite', 'alpha',
+  'devoue', 'augure', 'inquisiteur', 'medium', 'enchanteur', 'sacrifie', 'bourreau', 'doubles',
+  'originel', 'maudit', 'sectaire', 'envouteur', 'necromancien',
 ];
 
 function echapper(texte: string): string {
@@ -56,8 +58,8 @@ function bouton(texte: string, attrs: string, classe = ''): string {
 function ligneRole(g: EtatGenerateur, role: RoleId): string {
   const def = ROLES[role];
   const n = g.composition[role] ?? 0;
-  // La Trinité va par 3 : 0 ou 3.
-  const pas = role === 'trinite' ? def.cartes : 1;
+  // La Trinité va par 3 et les Doubles par 2 : le groupe entier ou rien.
+  const pas = role === 'trinite' || role === 'doubles' ? def.cartes : 1;
   return `
     <li class="ligne-role camp-${def.camp}">
       <img class="vignette" src="${import.meta.env.BASE_URL}roles/${role}.webp" alt="">

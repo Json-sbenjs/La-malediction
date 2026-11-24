@@ -23,13 +23,13 @@ function graine(n: number): () => number {
 }
 
 describe('composition conseillée', () => {
-  it('24 joueurs au maximum avec les cartes des rôles codés', () => {
-    expect(maxJoueursPossible()).toBe(24);
-    expect(() => compositionConseillee(25)).toThrow();
+  it('de 8 à 25 joueurs', () => {
+    expect(maxJoueursPossible()).toBe(25);
+    expect(() => compositionConseillee(26)).toThrow();
     expect(() => compositionConseillee(7)).toThrow();
   });
 
-  it.each(Array.from({ length: 17 }, (_, i) => i + 8))('%i joueurs : bon total, cartes respectées', (nb) => {
+  it.each(Array.from({ length: 18 }, (_, i) => i + 8))('%i joueurs : bon total, cartes respectées', (nb) => {
     const compo = compositionConseillee(nb);
     expect(totalComposition(compo)).toBe(nb);
     for (const [role, n] of Object.entries(compo) as [RoleId, number][]) {
@@ -37,6 +37,8 @@ describe('composition conseillée', () => {
     }
     expect(compo.spectre).toBeGreaterThanOrEqual(2);
     if (compo.trinite !== undefined) expect(compo.trinite).toBe(3);
+    if (compo.doubles !== undefined) expect(compo.doubles).toBe(2);
+    expect(compo.revenant).toBeUndefined();
   });
 
   it('8 joueurs : 2 Spectres, Oracle, Protecteur, Sainte, 3 Pèlerins', () => {

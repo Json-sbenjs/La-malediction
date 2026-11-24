@@ -263,7 +263,9 @@ button:disabled { opacity: 0.4; cursor: default; }
 
 .siege.camp-pelerins { border-color: var(--or); }
 .siege.camp-spectres { border-color: var(--sang); }
-.siege.camp-trinite { border-color: var(--vert-de-gris); }
+.siege.camp-trinite, .siege.camp-doubles { border-color: var(--vert-de-gris); }
+/* Solitaires (Maudit, Sectaire, Envoûteur, Nécromancien et son Revenant) : parchemin clair. */
+.siege.camp-maudit, .siege.camp-sectaire, .siege.camp-envouteur, .siege.camp-necromancien { border-color: var(--encre); }
 .siege.actif { opacity: 1; cursor: pointer; }
 .siege.acteur { opacity: 1; box-shadow: var(--halo-eveil); }
 .siege.choisi { opacity: 1; background: var(--or); color: var(--sur-or); }
@@ -337,7 +339,8 @@ button.rond { width: 48px; padding: 0; font-size: 22px; }
   border: 2px solid var(--or);
 }
 .ligne-role.camp-spectres .vignette { border-color: var(--sang); }
-.ligne-role.camp-trinite .vignette { border-color: var(--vert-de-gris); }
+.ligne-role.camp-trinite .vignette, .ligne-role.camp-doubles .vignette { border-color: var(--vert-de-gris); }
+.ligne-role:is(.camp-maudit, .camp-sectaire, .camp-envouteur, .camp-necromancien) .vignette { border-color: var(--encre); }
 .nom-role { flex: 1; min-width: 0; }
 .ok { color: var(--eveil); }
 .attention { color: var(--erreur-encre); }

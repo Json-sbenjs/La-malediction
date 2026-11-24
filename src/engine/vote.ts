@@ -1,5 +1,6 @@
-// Le jour : élection de l'Alpha si besoin, puis vote du village (Alpha ×2).
-import { tuer } from './mort';
+// Le jour : élection de l'Alpha si besoin, puis vote du village
+// (Alpha ×2, marque de l'Inquisiteur, Sacrifié, second vote du Bourreau).
+import { sauterBourreauMort, tuer } from './mort';
 import { debutDeNuit } from './nuit';
 import { nomJoueur, trouverJoueur, verifierCible, vivants } from './outils';
 import type { Action, Etape, EtatPartie, JoueurId } from './types';
@@ -29,12 +30,14 @@ export interface ResultatVote {
 
 /**
  * Compte les voix : `votes[votant] = cible` (null = abstention).
- * La voix de l'Alpha compte double. Égalité en tête → personne n'est éliminé.
+ * La voix de l'Alpha compte double. Le joueur marqué par l'Inquisiteur part avec une voix.
+ * Égalité en tête → personne n'est éliminé.
  */
 export function compterVotes(etat: EtatPartie, votes: Record<JoueurId, JoueurId | null>): ResultatVote {
   const ids = vivants(etat).map((j) => j.id);
   const alpha = alphaVivant(etat);
   const compte: Record<JoueurId, number> = {};
+  if (etat.marque !== null && ids.includes(etat.marque)) compte[etat.marque] = 1;
 
   for (const [cle, cible] of Object.entries(votes)) {
     const votant = Number(cle);
@@ -81,11 +84,30 @@ export function appliquerJour(etat: EtatPartie, phase: PhaseJour, action: Action
   }
 
   let suivant: EtatPartie = structuredClone(etat);
-  if (elimine !== null) tuer(suivant, elimine);
-  suivant = debutDeNuit(suivant, phase.numero + 1);
+  suivant.marque = null; // la marque ne vaut que pour le premier vote
   suivant.infoMJ =
     elimine === null
       ? "Personne n'est éliminé par le vote"
-      : `Le village élimine ${nomJoueur(trouverJoueur(suivant, elimine))}`;
-  return suivant;
+      : `Le village condamne ${nomJoueur(trouverJoueur(suivant, elimine))}`;
+
+  if (elimine !== null) {
+    // Le Sacrifié peut mourir à la place du condamné : on lui demande avant de tuer.
+    const sacrifie = vivants(suivant).find(
+      (j) => j.role === 'sacrifie' && !j.memoire.pouvoirUtilise && j.id !== elimine,
+    );
+    if (sacrifie) suivant.decisions.push({ type: 'sacrifice', sacrifie: sacrifie.id, condamne: elimine });
+    else {
+      tuer(suivant, elimine);
+      suivant.infoMJ = `Le village élimine ${nomJoueur(trouverJoueur(suivant, elimine))}`;
+    }
+  }
+
+  // Le Bourreau peut déclencher un second vote : on reste au jour en attendant sa réponse.
+  const bourreau = vivants(suivant).find((j) => j.role === 'bourreau' && !j.memoire.pouvoirUtilise);
+  if (bourreau) {
+    suivant.decisions.push({ type: 'bourreau', bourreau: bourreau.id, numero: phase.numero });
+    return sauterBourreauMort(suivant);
+  }
+  const info = suivant.infoMJ;
+  return { ...debutDeNuit(suivant, phase.numero + 1), infoMJ: info };
 }

@@ -2,7 +2,7 @@ import { nomJoueur, trouverJoueur, verifierCible, vivants } from './outils';
 import { CHOIX_OBLIGATOIRE, choisirLien, ciblesPremiereNuit, reconnaissance } from './premiere-nuit';
 import { mortsDeLaNuit, resoudreNuit } from './resolution-nuit';
 import { ROLES, rolesQuiSeReveillent } from './roles';
-import type { Action, Etape, EtatPartie, JoueurId, RoleId } from './types';
+import type { Action, Etape, EtatPartie, Joueur, JoueurId, RoleId } from './types';
 
 type EtapeReveil = Extract<Etape, { type: 'reveil' }>;
 type PhaseNuit = Extract<EtatPartie['phase'], { type: 'nuit' }>;
@@ -16,12 +16,24 @@ const ACTION_DU_ROLE: Partial<Record<RoleId, Action['type']>> = {
   spectre: 'spectres-attaquer',
   sainte: 'sainte-sauver',
   vipere: 'vipere-empoisonner',
+  inquisiteur: 'inquisiteur-marquer',
+  enchanteur: 'enchanteur-enchanter',
+  originel: 'originel-infecter',
+  maudit: 'maudit-devorer',
+  sectaire: 'sectaire-enroler',
+  envouteur: 'envouteur-charmer',
+  necromancien: 'necromancien-ressusciter',
   ...CHOIX_OBLIGATOIRE,
 };
 
+/** Groupes qui se reconnaissent la première nuit (le MJ valide avec « passer »). */
+const GROUPES: Partial<Record<RoleId, string>> = { trinite: 'Trinité', doubles: 'Doubles' };
+
 /** Ordre de réveil de la nuit : seulement les rôles présents dans la partie. */
 export function ordreDeNuit(etat: EtatPartie, numero: number): RoleId[] {
-  const presents = new Set(etat.joueurs.map((j) => j.role));
+  const presents = new Set<RoleId>(etat.joueurs.map((j) => j.role));
+  // Les Spectres se réveillent dès qu'il existe un joueur du camp (Originel, victime infectée…).
+  if (etat.joueurs.some((j) => j.camp === 'spectres' || j.role === 'maudit')) presents.add('spectre');
   return rolesQuiSeReveillent(numero === 1)
     .map((r) => r.id)
     .filter((id) => presents.has(id));
@@ -29,14 +41,25 @@ export function ordreDeNuit(etat: EtatPartie, numero: number): RoleId[] {
 
 /**
  * « si en vie » → « si occupé » → pouvoir encore disponible.
- * Les Spectres : tous les vivants du camp Spectres (Anathème basculé compris).
+ * Les Spectres : tous les vivants du camp Spectres (Anathème basculé, Originel, infectés)
+ * et le Maudit, qui se réveille avec eux. Personne ne se réveille si l'Enchanteur les a endormis.
  */
-export function acteurs(etat: EtatPartie, role: RoleId): JoueurId[] {
+export function acteurs(etat: EtatPartie, role: RoleId, numero: number): JoueurId[] {
+  // Conditions propres à certains rôles, avant de regarder les joueurs.
+  const morts = etat.joueurs.some((j) => !j.vivant);
+  const endormi = etat.enchantement && (role === 'spectre' || role === 'originel' || role === 'maudit');
+  if (endormi) return [];
+  if (role === 'originel' && etat.victimeSpectres === null) return []; // rien à transformer
+  if (role === 'maudit' && numero % 2 !== 0) return []; // une nuit sur deux : les nuits paires
+  if ((role === 'medium' || role === 'necromancien') && !morts) return []; // il faut un mort
+
   const unique = ROLES[role].usageUnique;
+  const estDuRole = (j: Joueur) =>
+    role === 'spectre' ? j.camp === 'spectres' || j.role === 'maudit' : j.role === role;
   return vivants(etat)
     .filter(
       (j) =>
-        (role === 'spectre' ? j.camp === 'spectres' : j.role === role) &&
+        estDuRole(j) &&
         !j.statuts.occupe &&
         !j.memoire.pouvoirPerdu &&
         !(unique && j.memoire.pouvoirUtilise),
@@ -46,7 +69,16 @@ export function acteurs(etat: EtatPartie, role: RoleId): JoueurId[] {
 
 /** Qui le rôle a le droit de viser cette nuit. */
 export function ciblesPossibles(etat: EtatPartie, role: RoleId, numero: number): JoueurId[] {
-  const quiAgit = acteurs(etat, role);
+  const quiAgit = acteurs(etat, role, numero);
+  const cibles = ciblesDuRole(etat, role, numero, quiAgit);
+  // Un enrôlé ne peut jamais viser le Sectaire avec son pouvoir.
+  const enroles = quiAgit.some((id) => etat.joueurs.find((j) => j.id === id)?.statuts.enrole);
+  if (!enroles) return cibles;
+  const sectaires = etat.joueurs.filter((j) => j.role === 'sectaire').map((j) => j.id);
+  return cibles.filter((id) => !sectaires.includes(id));
+}
+
+function ciblesDuRole(etat: EtatPartie, role: RoleId, numero: number, quiAgit: JoueurId[]): JoueurId[] {
   const enVie = vivants(etat);
   const saufActeurs = enVie.filter((j) => !quiAgit.includes(j.id));
   const ciblePrecedente = (): JoueurId | null => {
@@ -57,7 +89,20 @@ export function ciblesPossibles(etat: EtatPartie, role: RoleId, numero: number):
 
   switch (role) {
     case 'spectre':
-      return enVie.filter((j) => j.camp !== 'spectres').map((j) => j.id);
+      // Les Spectres ne visent ni un des leurs ni le Maudit (qui se réveille avec eux).
+      return enVie.filter((j) => j.camp !== 'spectres' && j.role !== 'maudit').map((j) => j.id);
+    case 'originel':
+      return etat.victimeSpectres === null ? [] : [etat.victimeSpectres];
+    case 'maudit':
+      return enVie.filter((j) => j.camp === 'spectres').map((j) => j.id);
+    case 'inquisiteur':
+      return saufActeurs.map((j) => j.id);
+    case 'sectaire':
+      return saufActeurs.filter((j) => !j.statuts.enrole).map((j) => j.id);
+    case 'envouteur':
+      return saufActeurs.filter((j) => !j.statuts.charme).map((j) => j.id);
+    case 'necromancien':
+      return etat.joueurs.filter((j) => !j.vivant).map((j) => j.id);
     case 'courtisane': {
       const interdite = ciblePrecedente();
       return saufActeurs.filter((j) => j.id !== interdite).map((j) => j.id);
@@ -77,6 +122,9 @@ export function ciblesPossibles(etat: EtatPartie, role: RoleId, numero: number):
     case 'adepte':
       return ciblesPremiereNuit(etat, quiAgit);
     case 'trinite':
+    case 'doubles':
+    case 'medium':
+    case 'enchanteur':
       return [];
     default:
       return enVie.map((j) => j.id);
@@ -91,7 +139,7 @@ function trouverEtape(etat: EtatPartie, phase: PhaseNuit): { index: number; etap
   const ordre = ordreDeNuit(etat, phase.numero);
   for (let index = phase.etape; index < ordre.length; index++) {
     const role = ordre[index];
-    const quiAgit = acteurs(etat, role);
+    const quiAgit = acteurs(etat, role, phase.numero);
     if (quiAgit.length > 0) {
       return {
         index,
@@ -112,11 +160,16 @@ export function etapeNuit(etat: EtatPartie, phase: PhaseNuit): Etape {
 export function debutDeNuit(etat: EtatPartie, numero: number): EtatPartie {
   return {
     ...etat,
-    joueurs: etat.joueurs.map((j) => ({ ...j, statuts: { occupe: false, protege: false } })),
+    // Occupé et protégé ne durent qu'une nuit ; enrôlé et charmé restent.
+    joueurs: etat.joueurs.map((j) => ({ ...j, statuts: { ...j.statuts, occupe: false, protege: false } })),
     phase: { type: 'nuit', numero, etape: 0 },
     victimeSpectres: null,
     sauveeParSainte: false,
     empoisonne: null,
+    enchantement: false,
+    infecte: null,
+    victimeMaudit: null,
+    marque: null,
     infoMJ: null,
   };
 }
@@ -206,10 +259,79 @@ export function appliquerNuit(etat: EtatPartie, phase: PhaseNuit, action: Action
       suivant.infoMJ = choisirLien(suivant, acteur, action.cible);
       break;
 
-    case 'passer':
-      // Reconnaissance (Trinité) : le MJ a montré les membres, on continue.
-      if (etape.role === 'trinite') suivant.infoMJ = `Trinité : ${reconnaissance(suivant, etape.acteurs)}`;
+    case 'inquisiteur-marquer':
+      viser(action.cible);
+      suivant.marque = action.cible;
+      suivant.infoMJ = `${nomJoueur(joueur(action.cible))} est marqué : une voix contre lui au vote`;
       break;
+
+    case 'enchanteur-enchanter':
+      if (!action.utiliser) break;
+      suivant.enchantement = true;
+      acteur.memoire.pouvoirUtilise = true;
+      suivant.infoMJ = 'Les Spectres sont endormis : ils ne se réveillent pas cette nuit';
+      break;
+
+    case 'originel-infecter': {
+      if (!action.utiliser) break;
+      const victime = etat.victimeSpectres;
+      if (victime === null) throw new Error('Pas de victime à transformer');
+      suivant.infecte = victime;
+      suivant.victimeSpectres = null; // elle ne meurt pas : elle sera transformée au matin
+      acteur.memoire.pouvoirUtilise = true;
+      suivant.infoMJ = `${nomJoueur(joueur(victime))} sera transformé en Spectre (sauf s'il est protégé)`;
+      break;
+    }
+
+    case 'maudit-devorer':
+      if (action.cible === null) break;
+      viser(action.cible);
+      suivant.victimeMaudit = action.cible;
+      break;
+
+    case 'sectaire-enroler': {
+      viser(action.cible);
+      const cible = joueur(action.cible);
+      cible.statuts.enrole = true;
+      suivant.infoMJ = `Réveille ${nomJoueur(cible)} et montre-lui le Sectaire : ${nomJoueur(acteur)}`;
+      break;
+    }
+
+    case 'envouteur-charmer': {
+      const cibles = action.cibles;
+      const attendu = Math.min(2, etape.ciblesPossibles.length);
+      if (cibles.length !== attendu || new Set(cibles).size !== cibles.length) {
+        throw new Error(`L'Envoûteur doit charmer ${attendu} joueur(s) différent(s)`);
+      }
+      cibles.forEach(viser);
+      for (const c of cibles) joueur(c).statuts.charme = true;
+      suivant.infoMJ = `Charmés : ${cibles.map((c) => nomJoueur(joueur(c))).join(', ')}`;
+      break;
+    }
+
+    case 'necromancien-ressusciter': {
+      if (action.cible === null) break;
+      viser(action.cible);
+      const revenant = joueur(action.cible);
+      revenant.vivant = true;
+      revenant.revele = true;
+      revenant.role = 'revenant';
+      revenant.camp = 'necromancien';
+      revenant.memoire = { pouvoirUtilise: false, pouvoirPerdu: false, derniereCible: null, lien: null };
+      revenant.statuts = { occupe: false, protege: false, enrole: false, charme: false };
+      acteur.memoire.pouvoirUtilise = true;
+      suivant.infoMJ =
+        `${nomJoueur(revenant)} revient en Revenant (à annoncer au matin). ` +
+        `Montre-lui le Nécromancien : ${nomJoueur(acteur)}`;
+      break;
+    }
+
+    case 'passer': {
+      // Reconnaissance (Trinité, Doubles) : le MJ a montré les membres, on continue.
+      const groupe = GROUPES[etape.role];
+      if (groupe) suivant.infoMJ = `${groupe} : ${reconnaissance(suivant, etape.acteurs)}`;
+      break;
+    }
   }
 
   return suivant;

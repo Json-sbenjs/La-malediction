@@ -34,7 +34,7 @@ Deux thèmes, la **Nuit** (par défaut) et le **Jour**. La palette est la même 
 | Fond | `fond`, `surface`, `surface-haute` | page, panneaux, sièges et boutons secondaires |
 | Texte | `encre`, `encre-douce` | parchemin clair ; secondaire pour les légendes |
 | Marque | `or`, `or-vif`, `sur-or` | titres, blason, bouton principal, sélection |
-| Camps | `or` (Pèlerins), `sang` (Spectres), `vert-de-gris` (Trinité) | bordure de 2px des sièges |
+| Camps | `or` (Pèlerins), `sang` (Spectres), `vert-de-gris` (Trinité, Doubles), `encre` (solitaires : Maudit, Sectaire, Envoûteur, Nécromancien) | bordure de 2px des sièges |
 | États | `eveil`, `info-*`, `erreur-*` | joueur qui agit, info secrète du MJ, action refusée |
 
 Règles :
@@ -74,7 +74,7 @@ L'appli change de thème avec la phase : la **Nuit** pendant les réveils, le **
 
 ## Les pictogrammes
 
-Les états d'un siège s'affichent en petits symboles : 👑 Alpha, 🛡️ protégé, 💤 occupé, 💀 mort. On les garde pour l'instant, car ils sont lisibles et sans ambiguïté. Une version gravée, dans le style du blason, pourra les remplacer plus tard.
+Les états d'un siège s'affichent en petits symboles : 👑 Alpha, 🛡️ protégé, 💤 occupé, 🪶 marqué par l'Inquisiteur, ⛓️ enrôlé par le Sectaire, 🎵 charmé par l'Envoûteur, 💀 mort. On les garde pour l'instant, car ils sont lisibles et sans ambiguïté. Une version gravée, dans le style du blason, pourra les remplacer plus tard.
 
 ## La voix
 

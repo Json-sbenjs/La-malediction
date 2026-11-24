@@ -1,4 +1,5 @@
 import { PLANS, validerPlan, type Plan } from './plans';
+import { nomJoueur } from './outils';
 import { ROLES } from './roles';
 import type { EtatPartie, Joueur } from './types';
 
@@ -46,14 +47,16 @@ export function creerPartie(plan: Plan, prenoms: (string | null)[] = []): EtatPa
       role: siege.role,
       camp: ROLES[siege.role].camp,
       vivant: true,
-      revele: false,
-      statuts: { occupe: false, protege: false },
+      // Le Dévoué est révélé à tous dès le début de la partie.
+      revele: siege.role === 'devoue',
+      statuts: { occupe: false, protege: false, enrole: false, charme: false },
       memoire: { pouvoirUtilise: false, pouvoirPerdu: false, derniereCible: null, lien: null },
     }));
 
   // Si l'Alpha est une carte posée sur un siège, son porteur l'est d'office.
   // Sinon, le village l'élira le premier jour.
   const porteurAlpha = joueurs.find((j) => j.role === 'alpha');
+  const devoue = joueurs.find((j) => j.role === 'devoue');
 
   return {
     planId: plan.id,
@@ -63,7 +66,11 @@ export function creerPartie(plan: Plan, prenoms: (string | null)[] = []): EtatPa
     victimeSpectres: null,
     sauveeParSainte: false,
     empoisonne: null,
+    enchantement: false,
+    infecte: null,
+    victimeMaudit: null,
+    marque: null,
     decisions: [],
-    infoMJ: null,
+    infoMJ: devoue ? `Annonce à tous : ${nomJoueur(devoue)} est le Dévoué` : null,
   };
 }

@@ -43,10 +43,11 @@ export function appliquer(etat: EtatPartie, action: Action): EtatPartie {
   else if (phase.type === 'nuit') suivant = appliquerNuit(etat, phase, action);
   else suivant = appliquerJour(etat, phase, action);
 
-  // Victoire : vérifiée dès que toutes les décisions liées aux morts sont réglées.
-  if (suivant.decisions.length === 0) {
+  // Victoire : vérifiée dès que les décisions liées aux morts sont réglées
+  // (la proposition de second vote du Bourreau n'empêche pas la partie de se finir).
+  if (suivant.decisions.every((d) => d.type === 'bourreau')) {
     const victoire = verifierVictoire(suivant);
-    if (victoire) suivant = { ...suivant, phase: { type: 'fin', gagnants: victoire.gagnants } };
+    if (victoire) suivant = { ...suivant, decisions: [], phase: { type: 'fin', gagnants: victoire.gagnants } };
   }
   return suivant;
 }

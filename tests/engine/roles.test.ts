@@ -8,6 +8,12 @@ describe('registre des rôles', () => {
     }
   });
 
+  it('les 28 cartes du jeu sont dans le registre', () => {
+    expect(Object.keys(ROLES)).toHaveLength(28);
+    expect(getRole('doubles').cartes).toBe(2);
+    expect(getRole('revenant').jamaisDistribue).toBe(true);
+  });
+
   it('respecte le nombre de cartes de la planche', () => {
     expect(getRole('spectre').cartes).toBe(4);
     expect(getRole('pelerin').cartes).toBe(6);
@@ -15,20 +21,22 @@ describe('registre des rôles', () => {
     expect(getRole('oracle').cartes).toBe(1);
   });
 
-  it('Sainte, Vipère et Usurpateur sont à usage unique', () => {
+  it('pouvoirs à usage unique', () => {
     const uniques = Object.values(ROLES)
       .filter((r) => r.usageUnique)
       .map((r) => r.id)
       .sort();
-    expect(uniques).toEqual(['sainte', 'usurpateur', 'vipere']);
+    expect(uniques).toEqual([
+      'bourreau', 'enchanteur', 'necromancien', 'originel', 'sacrifie', 'sainte', 'usurpateur', 'vipere',
+    ]);
   });
 
-  it("Anathème, Adepte et Trinité peuvent changer de camp", () => {
+  it("Anathème, Adepte, Trinité et Doubles peuvent changer de camp", () => {
     const variables = Object.values(ROLES)
       .filter((r) => r.campVariable)
       .map((r) => r.id)
       .sort();
-    expect(variables).toEqual(['adepte', 'anatheme', 'trinite']);
+    expect(variables).toEqual(['adepte', 'anatheme', 'doubles', 'trinite']);
   });
 
   it("deux rôles d'une même nuit n'ont pas le même rang", () => {
@@ -52,7 +60,7 @@ describe('ordre de réveil', () => {
 
   it('première nuit : reconnaissances et choix avant la nuit normale', () => {
     const ordre = rolesQuiSeReveillent(true).map((r) => r.id);
-    expect(ordre.slice(0, 3)).toEqual(['trinite', 'anatheme', 'adepte']);
+    expect(ordre.slice(0, 4)).toEqual(['trinite', 'doubles', 'anatheme', 'adepte']);
     expect(ordre).toContain('spectre');
   });
 });

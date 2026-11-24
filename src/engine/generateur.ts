@@ -18,13 +18,18 @@ export const FORMES: { id: Forme; nom: string }[] = [
 const PRIORITE: RoleId[] = [
   'oracle', 'protecteur', 'sainte', 'courtisane', 'instinct', 'vipere',
   'main-noire', 'anatheme', 'adepte', 'usurpateur', 'trinite', 'alpha',
+  // Au-delà de 24 joueurs (ou à ajouter à la main) : les autres rôles.
+  'devoue', 'inquisiteur', 'medium', 'enchanteur', 'sacrifie', 'bourreau', 'augure',
+  'doubles', 'originel', 'maudit', 'sectaire', 'envouteur', 'necromancien',
 ];
 
 /** Nombre total de cartes disponibles : le plus grand plan possible avec les rôles codés. */
 export function maxJoueursPossible(): number {
   return Math.min(
     MAX_JOUEURS,
-    Object.values(ROLES).reduce((total, r) => total + r.cartes, 0),
+    Object.values(ROLES)
+      .filter((r) => !r.jamaisDistribue)
+      .reduce((total, r) => total + r.cartes, 0),
   );
 }
 

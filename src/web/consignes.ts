@@ -1,10 +1,37 @@
 // Textes lus par le MJ, et comment chaque rôle de nuit se joue à l'écran.
 import type { Action, JoueurId, RoleId } from '../engine';
 
-export function consigneReveil(role: RoleId, premiereNuit: boolean): string {
+/** Ce que le MJ doit savoir de la table pour adapter la consigne. */
+export interface ContexteConsigne {
+  premiereNuit: boolean;
+  /** L'Augure est en vie : il peut espionner pendant le réveil des Spectres. */
+  augure: boolean;
+  /** Le Maudit est en vie : il se réveille avec les Spectres. */
+  maudit: boolean;
+}
+
+export function consigneReveil(role: RoleId, contexte: ContexteConsigne): string {
   switch (role) {
     case 'trinite':
       return 'La Trinité se réveille et ses trois membres se reconnaissent.';
+    case 'doubles':
+      return 'Les Doubles se réveillent et se reconnaissent.';
+    case 'medium':
+      return 'Le Médium se réveille et, en silence, pointe un mort puis un vivant. Le mort répond par un mime.';
+    case 'inquisiteur':
+      return "L'Inquisiteur se réveille et marque un joueur : il aura une voix contre lui au vote.";
+    case 'enchanteur':
+      return "L'Enchanteur se réveille : veut-il endormir les Spectres cette nuit ? (une seule fois)";
+    case 'originel':
+      return "L'Originel reste éveillé : veut-il transformer la victime en Spectre au lieu de la tuer ? (une seule fois)";
+    case 'maudit':
+      return 'Le Maudit reste éveillé : veut-il éliminer un Spectre ?';
+    case 'sectaire':
+      return 'Le Sectaire se réveille et enrôle un joueur. Réveille ensuite l\'enrôlé pour lui montrer le Sectaire.';
+    case 'envouteur':
+      return "L'Envoûteur se réveille et charme 2 joueurs.";
+    case 'necromancien':
+      return 'Le Nécromancien se réveille : veut-il ressusciter un mort ? (une seule fois)';
     case 'anatheme':
       return "L'Anathème se réveille et désigne son modèle.";
     case 'adepte':
@@ -17,10 +44,14 @@ export function consigneReveil(role: RoleId, premiereNuit: boolean): string {
       return "L'Oracle se réveille et désigne le joueur dont il veut connaître l'identité.";
     case 'instinct':
       return "L'Instinct se réveille et désigne 3 joueurs.";
-    case 'spectre':
-      return premiereNuit
+    case 'spectre': {
+      const base = contexte.premiereNuit
         ? 'Les Spectres se réveillent, se reconnaissent et désignent leur victime.'
         : 'Les Spectres se réveillent et désignent leur victime.';
+      const maudit = contexte.maudit ? ' Le Maudit se réveille avec eux.' : '';
+      const augure = contexte.augure ? " L'Augure peut espionner, les yeux entrouverts." : '';
+      return base + maudit + augure;
+    }
     case 'sainte':
       return 'La Sainte se réveille. Montre-lui la victime : veut-elle utiliser sa potion ?';
     case 'vipere':
@@ -33,8 +64,10 @@ export function consigneReveil(role: RoleId, premiereNuit: boolean): string {
 /** Comment le MJ saisit le choix d'un rôle de nuit. */
 export type ModeSaisie =
   | { type: 'aucune'; bouton: string }
-  | { type: 'cibles'; nombre: 1 | 3; action: (cibles: JoueurId[]) => Action; passer: { texte: string; action: Action } | null }
-  | { type: 'sainte' };
+  | { type: 'cibles'; nombre: number; action: (cibles: JoueurId[]) => Action; passer: { texte: string; action: Action } | null }
+  | { type: 'sainte' }
+  /** Une question oui / non (Enchanteur, Originel). */
+  | { type: 'oui-non'; oui: { texte: string; action: Action }; non: { texte: string; action: Action } };
 
 export function modeSaisie(role: RoleId): ModeSaisie {
   const une = (
@@ -74,6 +107,43 @@ export function modeSaisie(role: RoleId): ModeSaisie {
       };
     case 'sainte':
       return { type: 'sainte' };
+    case 'doubles':
+      return { type: 'aucune', bouton: 'Reconnaissance faite' };
+    case 'medium':
+      return { type: 'aucune', bouton: 'Consultation faite' };
+    case 'inquisiteur':
+      return une((cible) => ({ type: 'inquisiteur-marquer', cible }), { texte: 'Pas de marque', action: { type: 'passer' } });
+    case 'enchanteur':
+      return {
+        type: 'oui-non',
+        oui: { texte: 'Endormir les Spectres', action: { type: 'enchanteur-enchanter', utiliser: true } },
+        non: { texte: 'Pas cette nuit', action: { type: 'enchanteur-enchanter', utiliser: false } },
+      };
+    case 'originel':
+      return {
+        type: 'oui-non',
+        oui: { texte: 'Transformer la victime', action: { type: 'originel-infecter', utiliser: true } },
+        non: { texte: 'La laisser mourir', action: { type: 'originel-infecter', utiliser: false } },
+      };
+    case 'maudit':
+      return une((cible) => ({ type: 'maudit-devorer', cible }), {
+        texte: 'Personne',
+        action: { type: 'maudit-devorer', cible: null },
+      });
+    case 'sectaire':
+      return une((cible) => ({ type: 'sectaire-enroler', cible }));
+    case 'envouteur':
+      return {
+        type: 'cibles',
+        nombre: 2,
+        action: (cibles) => ({ type: 'envouteur-charmer', cibles }),
+        passer: { texte: 'Passer', action: { type: 'passer' } },
+      };
+    case 'necromancien':
+      return une((cible) => ({ type: 'necromancien-ressusciter', cible }), {
+        texte: 'Personne',
+        action: { type: 'necromancien-ressusciter', cible: null },
+      });
     default:
       return { type: 'aucune', bouton: 'Continuer' };
   }

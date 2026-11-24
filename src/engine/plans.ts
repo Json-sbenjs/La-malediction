@@ -76,11 +76,18 @@ export function validerPlan(plan: Plan): string[] {
       erreurs.push(`${ROLES[role].nom} : ${nb} sièges mais seulement ${max} carte(s)`);
     }
   }
-  if (!compte.spectre) {
+  if (!compte.spectre && !compte.originel) {
     erreurs.push('il faut au moins un Spectre');
   }
-  if (compte.trinite !== undefined && compte.trinite !== ROLES.trinite.cartes) {
-    erreurs.push(`la Trinité doit avoir ${ROLES.trinite.cartes} membres`);
+  // Les groupes (Trinité, Doubles) sont complets ou absents.
+  for (const groupe of ['trinite', 'doubles'] as const) {
+    const nb = compte[groupe];
+    if (nb !== undefined && nb !== ROLES[groupe].cartes) {
+      erreurs.push(`${ROLES[groupe].nom} : il faut ${ROLES[groupe].cartes} membres`);
+    }
+  }
+  for (const role of Object.keys(compte) as RoleId[]) {
+    if (ROLES[role].jamaisDistribue) erreurs.push(`${ROLES[role].nom} ne se pose pas sur un siège`);
   }
 
   return erreurs;

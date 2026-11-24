@@ -19,12 +19,18 @@ export interface RoleDef {
   /** Pouvoir utilisable une seule fois dans la partie. */
   usageUnique: boolean;
   description: string;
+  /** Rôle créé en cours de partie, jamais posé sur un siège (le Revenant). */
+  jamaisDistribue?: true;
 }
 
 /**
- * Registre des rôles présents sur les plans de salle.
+ * Registre des 28 rôles du jeu.
  * Les rangs de réveil sont une PROPOSITION : à vérifier avec la section
  * « Nuit Type » du diagramme de flux dans le FigJam.
+ * Ordre d'une nuit : Courtisane 10, Protecteur 20, Oracle 30, Médium 33, Inquisiteur 36,
+ * Instinct 40, Enchanteur 45, Spectres 50, Originel 52, Maudit 55, Sainte 60, Vipère 70,
+ * Sectaire 80, Envoûteur 85, Nécromancien 90.
+ * Première nuit, avant : Trinité 10, Doubles 12, Anathème 20, Adepte 30.
  */
 export const ROLES: Record<RoleId, RoleDef> = {
   spectre: {
@@ -173,8 +179,157 @@ export const ROLES: Record<RoleId, RoleDef> = {
     description:
       "Les 3 membres se reconnaissent la première nuit. Tant qu'ils sont 3 en vie, ils gagnent uniquement entre eux. Dès qu'un membre meurt, ils basculent chez les Pèlerins.",
   },
+  devoue: {
+    id: 'devoue',
+    nom: 'Le Dévoué',
+    camp: 'pelerins',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'jamais' },
+    usageUnique: false,
+    description: "Pèlerin sans pouvoir, mais sa carte est révélée à tous dès le début : un point de confiance pour le village.",
+  },
+  augure: {
+    id: 'augure',
+    nom: "L'Augure",
+    camp: 'pelerins',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'jamais' },
+    usageUnique: false,
+    description: "Peut espionner les Spectres pendant la nuit, mais risque d'être repéré et tué.",
+  },
+  inquisiteur: {
+    id: 'inquisiteur',
+    nom: "L'Inquisiteur",
+    camp: 'pelerins',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'chaque-nuit', rang: 36 },
+    usageUnique: false,
+    description:
+      'Chaque nuit, marque secrètement un joueur : le lendemain, ce joueur démarre le vote avec une voix déjà contre lui.',
+  },
+  medium: {
+    id: 'medium',
+    nom: 'Le Médium',
+    camp: 'pelerins',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'chaque-nuit', rang: 33 },
+    usageUnique: false,
+    description:
+      'Chaque nuit, en silence, pointe un mort puis un vivant. Le mort répond par un mime sur le vivant désigné.',
+  },
+  enchanteur: {
+    id: 'enchanteur',
+    nom: "L'Enchanteur",
+    camp: 'pelerins',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'chaque-nuit', rang: 45 },
+    usageUnique: true,
+    description:
+      'Une fois dans la partie, endort les Spectres : ils ne se réveillent pas et ne tuent personne cette nuit-là.',
+  },
+  originel: {
+    id: 'originel',
+    nom: "L'Originel",
+    camp: 'spectres',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'chaque-nuit', rang: 52 },
+    usageUnique: true,
+    description:
+      'Spectre. Une fois par partie, transforme la victime des Spectres en nouveau Spectre au lieu de la tuer.',
+  },
+  maudit: {
+    id: 'maudit',
+    nom: 'Le Maudit',
+    camp: 'maudit',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'chaque-nuit', rang: 55 },
+    usageUnique: false,
+    description:
+      'Se réveille avec les Spectres. Une nuit sur deux, peut éliminer un Spectre. Gagne seul s\'il est le dernier survivant.',
+  },
+  sacrifie: {
+    id: 'sacrifie',
+    nom: 'Le Sacrifié',
+    camp: 'pelerins',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'jamais' },
+    usageUnique: true,
+    description: 'Après le vote, peut se manifester et mourir à la place du condamné, en révélant son rôle.',
+  },
+  bourreau: {
+    id: 'bourreau',
+    nom: 'Le Bourreau',
+    camp: 'pelerins',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'jamais' },
+    usageUnique: true,
+    description: 'Une fois dans la partie, déclenche un second vote le même jour, par un signe convenu avec le MJ.',
+  },
+  doubles: {
+    id: 'doubles',
+    nom: 'Les Doubles',
+    camp: 'doubles',
+    campVariable: true,
+    cartes: 2,
+    reveil: { type: 'premiere-nuit', rang: 12 },
+    usageUnique: false,
+    description:
+      "Les 2 Doubles se reconnaissent la première nuit et gagnent seules tant qu'elles sont 2. Dès qu'une meurt, la survivante passe chez les Pèlerins.",
+  },
+  sectaire: {
+    id: 'sectaire',
+    nom: 'Le Sectaire',
+    camp: 'sectaire',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'chaque-nuit', rang: 80 },
+    usageUnique: false,
+    description:
+      'Chaque nuit, enrôle un joueur, qui ne peut plus le viser et doit voter comme lui. Gagne seul quand tous les vivants sont enrôlés.',
+  },
+  envouteur: {
+    id: 'envouteur',
+    nom: "L'Envoûteur",
+    camp: 'envouteur',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'chaque-nuit', rang: 85 },
+    usageUnique: false,
+    description: 'Chaque nuit, charme 2 joueurs. Gagne seul quand tous les vivants sont charmés.',
+  },
+  necromancien: {
+    id: 'necromancien',
+    nom: 'Le Nécromancien',
+    camp: 'necromancien',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'chaque-nuit', rang: 90 },
+    usageUnique: true,
+    description:
+      'Une seule fois, ressuscite un mort en Revenant. Gagne seul, ou avec son Revenant si les deux sont en vie à la fin.',
+  },
+  revenant: {
+    id: 'revenant',
+    nom: 'Le Revenant',
+    camp: 'necromancien',
+    campVariable: false,
+    cartes: 1,
+    reveil: { type: 'jamais' },
+    usageUnique: false,
+    description:
+      'Mort ressuscité par le Nécromancien : revient publiquement, sans pouvoir, avec un seul but : faire gagner le Nécromancien.',
+    jamaisDistribue: true,
+  },
 };
-
 export function getRole(id: RoleId): RoleDef {
   return ROLES[id];
 }

@@ -3,11 +3,8 @@
 // sans fs, readline, process ni DOM, pour tourner aussi sur l'iPad.
 
 /**
- * Identifiant d'un rôle.
- * Pour l'instant : uniquement les rôles présents sur les plans de salle (P1).
- * Les rôles « après la deadline » (Dévoué, Augure, Inquisiteur, Médium,
- * Enchanteur, Originel, Maudit, Sacrifié, Bourreau, Doubles, Sectaire,
- * Envoûteur, Nécromancien / Revenant) seront ajoutés ici plus tard.
+ * Identifiant d'un rôle : les 28 cartes du jeu.
+ * Le Revenant n'est jamais distribué : il naît de la résurrection du Nécromancien.
  */
 export type RoleId =
   | 'spectre'
@@ -23,15 +20,39 @@ export type RoleId =
   | 'adepte'
   | 'usurpateur'
   | 'alpha'
-  | 'trinite';
+  | 'trinite'
+  | 'devoue'
+  | 'augure'
+  | 'inquisiteur'
+  | 'medium'
+  | 'enchanteur'
+  | 'originel'
+  | 'maudit'
+  | 'sacrifie'
+  | 'bourreau'
+  | 'doubles'
+  | 'sectaire'
+  | 'envouteur'
+  | 'necromancien'
+  | 'revenant';
 
 /**
  * Camp avec lequel un joueur peut gagner.
  * Le camp d'un joueur peut changer en cours de partie
- * (Anathème dont le modèle meurt, Adepte héritant d'un Spectre,
- * Trinité qui se dissout à la 1re mort).
+ * (Anathème dont le modèle meurt, Adepte héritant d'un Spectre, victime de l'Originel,
+ * Trinité ou Doubles qui se dissolvent à la 1re mort).
+ * Trinité et Doubles : groupes solitaires qui deviennent Pèlerins.
+ * Maudit, Sectaire, Envoûteur, Nécromancien (+ son Revenant) : solitaires.
  */
-export type Camp = 'pelerins' | 'spectres' | 'trinite';
+export type Camp =
+  | 'pelerins'
+  | 'spectres'
+  | 'trinite'
+  | 'doubles'
+  | 'maudit'
+  | 'sectaire'
+  | 'envouteur'
+  | 'necromancien';
 
 /** Numéro du siège = identifiant du joueur (le rôle est lié au siège). */
 export type JoueurId = number;
@@ -42,11 +63,15 @@ export interface Statuts {
   occupe: boolean;
   /** Protégé par le Protecteur cette nuit. */
   protege: boolean;
+  /** Enrôlé par le Sectaire (durable, jusqu'à la mort du Sectaire). */
+  enrole: boolean;
+  /** Charmé par l'Envoûteur (durable). */
+  charme: boolean;
 }
 
 /** Ce que le rôle d'un joueur doit retenir d'une nuit à l'autre. */
 export interface Memoire {
-  /** Pouvoir à usage unique déjà utilisé (Sainte, Vipère, Usurpateur). */
+  /** Pouvoir à usage unique déjà utilisé (Sainte, Vipère, Usurpateur, Enchanteur, Originel…). */
   pouvoirUtilise: boolean;
   /** Pouvoir perdu définitivement (Instinct qui rate). */
   pouvoirPerdu: boolean;
@@ -87,7 +112,11 @@ export type Phase =
 export type Decision =
   | { type: 'usurpateur'; usurpateur: JoueurId; mort: JoueurId }
   | { type: 'main-noire'; tireur: JoueurId }
-  | { type: 'alpha-successeur'; ancien: JoueurId };
+  | { type: 'alpha-successeur'; ancien: JoueurId }
+  /** Le Sacrifié peut mourir à la place du condamné du vote. */
+  | { type: 'sacrifice'; sacrifie: JoueurId; condamne: JoueurId }
+  /** Le Bourreau peut déclencher un second vote ce jour-là (toujours en dernier dans la file). */
+  | { type: 'bourreau'; bourreau: JoueurId; numero: number };
 
 export interface EtatPartie {
   /** Identifiant du plan de salle utilisé. */
@@ -102,6 +131,14 @@ export interface EtatPartie {
   sauveeParSainte: boolean;
   /** Joueur empoisonné par la Vipère cette nuit. */
   empoisonne: JoueurId | null;
+  /** L'Enchanteur a endormi les Spectres cette nuit. */
+  enchantement: boolean;
+  /** Victime des Spectres transformée en Spectre par l'Originel cette nuit. */
+  infecte: JoueurId | null;
+  /** Spectre éliminé par le Maudit cette nuit. */
+  victimeMaudit: JoueurId | null;
+  /** Joueur marqué par l'Inquisiteur : une voix contre lui au vote du lendemain. */
+  marque: JoueurId | null;
   /** Choix en attente suite à des morts (prioritaires sur tout le reste). */
   decisions: Decision[];
   /** Info à transmettre en secret par le MJ (résultat de l'Oracle, de l'Instinct…). */
@@ -120,7 +157,7 @@ export type Etape =
     }
   /** Fin de nuit : le MJ voit qui meurt, puis valide avec `passer`. */
   | { type: 'resolution-nuit'; numero: number; morts: JoueurId[] }
-  /** Un choix lié à une mort (Usurpateur, Main Noire, successeur de l'Alpha). */
+  /** Un choix lié à une mort ou au vote (Usurpateur, Main Noire, Alpha, Sacrifié, Bourreau). */
   | { type: 'decision'; decision: Decision; ciblesPossibles: JoueurId[] }
   | { type: 'election-alpha'; numero: number; candidats: JoueurId[] }
   | { type: 'vote'; numero: number; votants: JoueurId[]; ciblesPossibles: JoueurId[]; alpha: JoueurId }
@@ -140,6 +177,13 @@ export type Action =
   | { type: 'spectres-attaquer'; cible: JoueurId | null }
   | { type: 'sainte-sauver'; utiliser: boolean }
   | { type: 'vipere-empoisonner'; cible: JoueurId | null }
+  | { type: 'inquisiteur-marquer'; cible: JoueurId }
+  | { type: 'enchanteur-enchanter'; utiliser: boolean }
+  | { type: 'originel-infecter'; utiliser: boolean }
+  | { type: 'maudit-devorer'; cible: JoueurId | null }
+  | { type: 'sectaire-enroler'; cible: JoueurId }
+  | { type: 'envouteur-charmer'; cibles: JoueurId[] }
+  | { type: 'necromancien-ressusciter'; cible: JoueurId | null }
   // Première nuit
   | { type: 'anatheme-choisir-modele'; cible: JoueurId }
   | { type: 'adepte-choisir-mentor'; cible: JoueurId }
@@ -152,5 +196,7 @@ export type Action =
   | { type: 'main-noire-tirer'; cible: JoueurId }
   | { type: 'alpha-successeur'; cible: JoueurId }
   | { type: 'usurpateur-remplacer'; cible: JoueurId | null }
+  | { type: 'sacrifice'; accepter: boolean }
+  | { type: 'second-vote'; accepter: boolean }
   // Général : ne rien faire, ou valider l'étape (ex. résolution de la nuit)
   | { type: 'passer' };

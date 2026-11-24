@@ -157,8 +157,27 @@ function illustration(role: string, alt: string): string {
   return `<img class="illustration" src="${image(role)}" alt="${echapper(alt)}">`;
 }
 
-const NOM_CAMP: Record<Camp, string> = { pelerins: 'Pèlerins', spectres: 'Spectres', trinite: 'Trinité' };
-const IMAGE_CAMP: Record<Camp, string> = { pelerins: 'pelerin', spectres: 'spectre', trinite: 'trinite' };
+const VICTOIRE: Record<Camp, string> = {
+  pelerins: 'Victoire des Pèlerins',
+  spectres: 'Victoire des Spectres',
+  trinite: 'Victoire de la Trinité',
+  doubles: 'Victoire des Doubles',
+  maudit: 'Victoire du Maudit',
+  sectaire: 'Victoire du Sectaire',
+  envouteur: "Victoire de l'Envoûteur",
+  necromancien: 'Victoire du Nécromancien',
+};
+/** Carte affichée en fin de partie pour le camp gagnant. */
+const IMAGE_CAMP: Record<Camp, string> = {
+  pelerins: 'pelerin',
+  spectres: 'spectre',
+  trinite: 'trinite',
+  doubles: 'doubles',
+  maudit: 'maudit',
+  sectaire: 'sectaire',
+  envouteur: 'envouteur',
+  necromancien: 'necromancien',
+};
 
 function nom(id: JoueurId): string {
   const j = ui.etat?.joueurs.find((x) => x.id === id);
@@ -182,7 +201,7 @@ function siegesActifs(etape: Etape): JoueurId[] {
     case 'reveil':
       return modeSaisie(etape.role).type === 'cibles' ? etape.ciblesPossibles : [];
     case 'decision':
-      return etape.decision.type === 'usurpateur' ? [] : etape.ciblesPossibles;
+      return etape.ciblesPossibles;
     case 'election-alpha':
       return etape.candidats;
     case 'vote':
@@ -195,7 +214,7 @@ function siegesActifs(etape: Etape): JoueurId[] {
 function nombreACocher(etape: Etape): number {
   if (etape.type === 'reveil') {
     const mode = modeSaisie(etape.role);
-    return mode.type === 'cibles' ? mode.nombre : 0;
+    return mode.type === 'cibles' ? Math.min(mode.nombre, etape.ciblesPossibles.length) : 0;
   }
   return 1;
 }
@@ -257,6 +276,9 @@ function siege(j: Joueur, etape: Etape, actifs: JoueurId[], compte: Record<Joueu
     etat.alpha === j.id ? '👑' : '',
     j.statuts.protege ? '🛡️' : '',
     j.statuts.occupe ? '💤' : '',
+    etat.marque === j.id ? '🪶' : '',
+    j.statuts.enrole ? '⛓️' : '',
+    j.statuts.charme ? '🎵' : '',
     j.vivant ? '' : '💀',
   ].join('');
   const vote = ui.votes[j.id];
@@ -284,8 +306,13 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
 
   switch (etape.type) {
     case 'reveil': {
-      const premiereNuit = etat.phase.type === 'nuit' && etat.phase.numero === 1;
+      const contexte = {
+        premiereNuit: etat.phase.type === 'nuit' && etat.phase.numero === 1,
+        augure: etat.joueurs.some((j) => j.vivant && j.role === 'augure'),
+        maudit: etat.joueurs.some((j) => j.vivant && j.role === 'maudit'),
+      };
       const mode = modeSaisie(etape.role);
+      const nombre = nombreACocher(etape);
       const qui = etape.acteurs.map(nom).join(', ');
       let saisie = '';
       if (mode.type === 'aucune') {
@@ -300,10 +327,20 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
                  ${bouton('Sauver la victime', 'data-sainte="oui"', 'principal')}
                  ${bouton('Ne pas utiliser la potion', 'data-sainte="non"')}
                </div>`;
-      } else {
-        const pret = ui.selection.length === mode.nombre;
+      } else if (mode.type === 'oui-non') {
+        const victime = etape.role === 'originel' ? etape.ciblesPossibles[0] : undefined;
         saisie = `
-          <p>Touche ${mode.nombre === 1 ? 'un siège' : '3 sièges'} sur le plan. Choix : <strong>${choisis}</strong></p>
+          ${victime === undefined ? '' : `<p>Victime : <strong>${nom(victime)}</strong></p>`}
+          <div class="boutons">
+            ${bouton(echapper(mode.oui.texte), 'data-oui-non="oui"', 'principal')}
+            ${bouton(echapper(mode.non.texte), 'data-oui-non="non"')}
+          </div>`;
+      } else {
+        const pret = nombre > 0 && ui.selection.length === nombre;
+        const consigneSaisie =
+          nombre === 0 ? 'Personne à désigner.' : `Touche ${nombre === 1 ? 'un siège' : `${nombre} sièges`} sur le plan.`;
+        saisie = `
+          <p>${consigneSaisie} Choix : <strong>${choisis}</strong></p>
           <div class="boutons">
             ${valider(pret)}
             ${mode.passer ? bouton(echapper(mode.passer.texte), 'data-passer-role') : ''}
@@ -312,7 +349,7 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
       return `
         ${illustration(etape.role, ROLES[etape.role].nom)}
         <h2 class="titre-role">${echapper(ROLES[etape.role].nom)}</h2>
-        <p class="consigne">${consigneReveil(etape.role, premiereNuit)}</p>
+        <p class="consigne">${consigneReveil(etape.role, contexte)}</p>
         <p class="qui">${etape.acteurs.length > 1 ? 'Joueurs' : 'Joueur'} : ${qui}</p>
         ${saisie}`;
     }
@@ -339,6 +376,28 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
           <div class="boutons">
             ${bouton('Il prend le rôle', `data-usurper="${d.mort}"`, 'principal')}
             ${bouton('Il refuse', 'data-passer')}
+          </div>`;
+      }
+      if (d.type === 'sacrifice') {
+        return `
+          ${illustration('sacrifie', 'Le Sacrifié')}
+          <h2 class="titre-role">Le Sacrifié</h2>
+          <p class="consigne">Le village condamne ${nom(d.condamne)}. Le Sacrifié (${nom(
+            d.sacrifie,
+          )}) se manifeste-t-il pour mourir à sa place ?</p>
+          <div class="boutons">
+            ${bouton('Il se sacrifie', 'data-sacrifice="oui"', 'principal')}
+            ${bouton('Non', 'data-sacrifice="non"')}
+          </div>`;
+      }
+      if (d.type === 'bourreau') {
+        return `
+          ${illustration('bourreau', 'Le Bourreau')}
+          <h2 class="titre-role">Le Bourreau</h2>
+          <p class="consigne">Le Bourreau (${nom(d.bourreau)}) a-t-il fait le signe pour un second vote ? (une seule fois)</p>
+          <div class="boutons">
+            ${bouton('Second vote', 'data-second-vote="oui"', 'principal')}
+            ${bouton('Non, la nuit tombe', 'data-second-vote="non"')}
           </div>`;
       }
       const titre = d.type === 'main-noire' ? 'La Main Noire' : "Successeur de l'Alpha";
@@ -374,6 +433,16 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
       return `
         <h2>Vote du village</h2>
         <p class="consigne">Touche un votant, puis le joueur qu'il vise. La voix de l'Alpha 👑 compte double.</p>
+        ${
+          etat.marque !== null && etat.joueurs.some((j) => j.id === etat.marque && j.vivant)
+            ? `<p>🪶 Marque de l'Inquisiteur : ${nom(etat.marque)} part avec une voix contre lui.</p>`
+            : ''
+        }
+        ${
+          etat.joueurs.some((j) => j.vivant && j.statuts.enrole)
+            ? '<p>⛓️ Les enrôlés doivent voter comme le Sectaire.</p>'
+            : ''
+        }
         <p>${
           ui.votant === null
             ? 'Touche un votant, ou directement le joueur à éliminer.'
@@ -399,11 +468,11 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
         ${
           etape.gagnants === null
             ? `<img class="illustration" src="${import.meta.env.BASE_URL}blason.webp" alt="">`
-            : illustration(IMAGE_CAMP[etape.gagnants], NOM_CAMP[etape.gagnants])
+            : illustration(IMAGE_CAMP[etape.gagnants], VICTOIRE[etape.gagnants])
         }
         <h2 class="titre-role">Fin de la partie</h2>
         <p class="victoire ${etape.gagnants ?? ''}">${
-          etape.gagnants === null ? 'Personne ne gagne' : `Victoire des ${NOM_CAMP[etape.gagnants]}`
+          etape.gagnants === null ? 'Personne ne gagne' : VICTOIRE[etape.gagnants]
         }</p>
         <div class="boutons">${bouton('Nouvelle partie', 'data-nouvelle', 'principal')}</div>`;
   }
@@ -595,6 +664,16 @@ app.addEventListener('click', (evt) => {
     return jouer({ type: 'sainte-sauver', utiliser: d.sainte === 'oui' });
   } else if (d.usurper !== undefined) {
     return jouer({ type: 'usurpateur-remplacer', cible: Number(d.usurper) });
+  } else if (d.ouiNon !== undefined) {
+    const etape = etapeSuivante(ui.etat!);
+    if (etape.type === 'reveil') {
+      const mode = modeSaisie(etape.role);
+      if (mode.type === 'oui-non') return jouer(d.ouiNon === 'oui' ? mode.oui.action : mode.non.action);
+    }
+  } else if (d.sacrifice !== undefined) {
+    return jouer({ type: 'sacrifice', accepter: d.sacrifice === 'oui' });
+  } else if (d.secondVote !== undefined) {
+    return jouer({ type: 'second-vote', accepter: d.secondVote === 'oui' });
   } else if (d.eliminer !== undefined) {
     return jouer({ type: 'eliminer', cible: Number(d.eliminer) });
   } else if (d.voter !== undefined) {
