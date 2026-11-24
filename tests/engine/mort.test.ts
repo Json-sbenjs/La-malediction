@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { appliquer, creerPartie, etapeSuivante, type EtatPartie } from '../../src/engine';
-import { PLAN_COMPLET, finirNuit, jouerNuit, planDeTest } from './aides';
+import { appliquer, etapeSuivante, type EtatPartie } from '../../src/engine';
+import { PLAN_COMPLET, finirNuit, jouerNuit, nouvellePartie, planDeTest } from './aides';
 
 const auVote = (etat: EtatPartie, alpha = 3) => appliquer(finirNuit(etat), { type: 'elire-alpha', cible: alpha });
 
 describe('Main Noire', () => {
   it('à sa mort, elle élimine un joueur de son choix', () => {
-    let etat = finirNuit(creerPartie(PLAN_COMPLET), { spectre: { type: 'spectres-attaquer', cible: 9 } });
+    let etat = finirNuit(nouvellePartie(PLAN_COMPLET), { spectre: { type: 'spectres-attaquer', cible: 9 } });
     expect(etapeSuivante(etat)).toMatchObject({ type: 'decision', decision: { type: 'main-noire', tireur: 9 } });
     expect(() => appliquer(etat, { type: 'elire-alpha', cible: 3 })).toThrow(/Main Noire/);
     etat = appliquer(etat, { type: 'main-noire-tirer', cible: 5 });
@@ -16,7 +16,7 @@ describe('Main Noire', () => {
   });
 
   it('elle tire aussi si elle meurt au vote', () => {
-    let etat = auVote(creerPartie(PLAN_COMPLET));
+    let etat = auVote(nouvellePartie(PLAN_COMPLET));
     etat = appliquer(etat, { type: 'vote', votes: { 1: 9 } });
     expect(etapeSuivante(etat)).toMatchObject({ type: 'decision', decision: { type: 'main-noire' } });
     etat = appliquer(etat, { type: 'main-noire-tirer', cible: 6 });
@@ -27,7 +27,7 @@ describe('Main Noire', () => {
 
 describe("successeur de l'Alpha", () => {
   it("l'Alpha mort désigne son successeur", () => {
-    let etat = auVote(creerPartie(PLAN_COMPLET), 10);
+    let etat = auVote(nouvellePartie(PLAN_COMPLET), 10);
     etat = appliquer(etat, { type: 'vote', votes: { 1: 10 } });
     expect(etapeSuivante(etat)).toMatchObject({ type: 'decision', decision: { type: 'alpha-successeur', ancien: 10 } });
     etat = appliquer(etat, { type: 'alpha-successeur', cible: 11 });
@@ -35,7 +35,7 @@ describe("successeur de l'Alpha", () => {
   });
 
   it("s'il passe, le village réélit un Alpha", () => {
-    let etat = auVote(creerPartie(PLAN_COMPLET), 10);
+    let etat = auVote(nouvellePartie(PLAN_COMPLET), 10);
     etat = appliquer(etat, { type: 'vote', votes: { 1: 10 } });
     etat = appliquer(etat, { type: 'passer' });
     etat = finirNuit(etat);
@@ -47,8 +47,7 @@ describe('Anathème', () => {
   const PLAN = planDeTest(['anatheme', 'spectre', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin']);
 
   it('si son modèle meurt, il bascule chez les Spectres et se réveille avec eux', () => {
-    let etat = finirNuit(creerPartie(PLAN), {
-      anatheme: { type: 'anatheme-choisir-modele', cible: 3 },
+    let etat = finirNuit(nouvellePartie(PLAN, [], { modele: 3 }), {
       spectre: { type: 'spectres-attaquer', cible: 3 },
     });
     expect(etat.joueurs[0].camp).toBe('spectres');
@@ -59,8 +58,7 @@ describe('Anathème', () => {
   });
 
   it("sinon il reste Pèlerin", () => {
-    const etat = finirNuit(creerPartie(PLAN), {
-      anatheme: { type: 'anatheme-choisir-modele', cible: 3 },
+    const etat = finirNuit(nouvellePartie(PLAN, [], { modele: 3 }), {
       spectre: { type: 'spectres-attaquer', cible: 4 },
     });
     expect(etat.joueurs[0].camp).toBe('pelerins');
@@ -70,8 +68,7 @@ describe('Anathème', () => {
 describe('Adepte', () => {
   it('hérite du rôle de son mentor, pouvoirs remis à neuf', () => {
     const plan = planDeTest(['adepte', 'spectre', 'sainte', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin']);
-    let etat = finirNuit(creerPartie(plan), {
-      adepte: { type: 'adepte-choisir-mentor', cible: 3 },
+    let etat = finirNuit(nouvellePartie(plan, [], { mentor: 3 }), {
       spectre: { type: 'spectres-attaquer', cible: 4 },
       sainte: { type: 'sainte-sauver', utiliser: true },
     });
@@ -86,8 +83,7 @@ describe('Adepte', () => {
 
   it('si le mentor était un Spectre, il bascule chez les Spectres', () => {
     const plan = planDeTest(['adepte', 'spectre', 'spectre', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin']);
-    let etat = creerPartie(plan);
-    etat = appliquer(etat, { type: 'adepte-choisir-mentor', cible: 2 });
+    let etat = nouvellePartie(plan, [], { mentor: 2 });
     etat = auVote(etat, 4);
     etat = appliquer(etat, { type: 'vote', votes: { 4: 2, 5: 2 } });
     expect(etat.joueurs[0]).toMatchObject({ role: 'spectre', camp: 'spectres' });
@@ -98,7 +94,7 @@ describe('Usurpateur', () => {
   const PLAN = planDeTest(['usurpateur', 'spectre', 'main-noire', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin']);
 
   it('il prend le rôle du mort, qui ne déclenche plus son effet', () => {
-    let etat = finirNuit(creerPartie(PLAN), { spectre: { type: 'spectres-attaquer', cible: 3 } });
+    let etat = finirNuit(nouvellePartie(PLAN), { spectre: { type: 'spectres-attaquer', cible: 3 } });
     expect(etapeSuivante(etat)).toMatchObject({
       type: 'decision',
       decision: { type: 'usurpateur', usurpateur: 1, mort: 3 },
@@ -110,17 +106,17 @@ describe('Usurpateur', () => {
   });
 
   it("s'il refuse, l'effet du mort s'applique", () => {
-    let etat = finirNuit(creerPartie(PLAN), { spectre: { type: 'spectres-attaquer', cible: 3 } });
+    let etat = finirNuit(nouvellePartie(PLAN), { spectre: { type: 'spectres-attaquer', cible: 3 } });
     etat = appliquer(etat, { type: 'usurpateur-remplacer', cible: null });
     expect(etapeSuivante(etat)).toMatchObject({ type: 'decision', decision: { type: 'main-noire', tireur: 3 } });
   });
 
   it("il ne peut usurper que le mort qu'on lui propose", () => {
-    const etat = finirNuit(creerPartie(PLAN), { spectre: { type: 'spectres-attaquer', cible: 3 } });
+    const etat = finirNuit(nouvellePartie(PLAN), { spectre: { type: 'spectres-attaquer', cible: 3 } });
     expect(() => appliquer(etat, { type: 'usurpateur-remplacer', cible: 4 })).toThrow();
   });
 });
 
 it('jouerNuit est utilisable sans action', () => {
-  expect(etapeSuivante(jouerNuit(creerPartie(PLAN_COMPLET)))).toMatchObject({ type: 'resolution-nuit', morts: [] });
+  expect(etapeSuivante(jouerNuit(nouvellePartie(PLAN_COMPLET)))).toMatchObject({ type: 'resolution-nuit', morts: [] });
 });

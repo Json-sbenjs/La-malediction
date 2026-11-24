@@ -1,12 +1,12 @@
 // ★ JALON semaine 3 : une partie complète, de la mise en place à la victoire.
 import { describe, expect, it } from 'vitest';
-import { appliquer, creerPartie, etapeSuivante } from '../../src/engine';
-import { PLAN_COMPLET, planDeTest } from './aides';
+import { appliquer, etapeSuivante } from '../../src/engine';
+import { PLAN_COMPLET, nouvellePartie, planDeTest } from './aides';
 
 describe('partie complète', () => {
   it('les Pèlerins gagnent en deux nuits', () => {
     const prenoms = ['Léa', 'Paul', 'Inès', 'Hugo', 'Max', 'Zoé', 'Lina', 'Noé', 'Tom', 'Emma', 'Jade', 'Louis'];
-    let etat = creerPartie(PLAN_COMPLET, prenoms);
+    let etat = nouvellePartie(PLAN_COMPLET, prenoms);
 
     // ── Nuit 1 ──────────────────────────────────────────
     expect(etapeSuivante(etat)).toMatchObject({ type: 'reveil', role: 'courtisane' });
@@ -53,7 +53,7 @@ describe('partie complète', () => {
 
   it('les Spectres gagnent quand tous les autres sont morts', () => {
     const plan = planDeTest(['spectre', 'spectre', 'oracle', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin']);
-    let etat = creerPartie(plan);
+    let etat = nouvellePartie(plan);
     // Fin de partie : il ne reste que les 2 Spectres et le Pèlerin du siège 4.
     for (const j of etat.joueurs) j.vivant = [1, 2, 4].includes(j.id);
     etat = appliquer(etat, { type: 'spectres-attaquer', cible: 4 });

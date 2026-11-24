@@ -3,7 +3,8 @@ import type { Camp, RoleId } from './types';
 /** Quand un rôle est appelé la nuit. Union discriminée sur `type`. */
 export type Reveil =
   | { type: 'jamais' }
-  | { type: 'premiere-nuit'; rang: number }
+  /** Nuit d'explication seulement : reconnaissances et choix (modèle, mentor). */
+  | { type: 'explication'; rang: number }
   | { type: 'chaque-nuit'; rang: number };
 
 export interface RoleDef {
@@ -30,7 +31,8 @@ export interface RoleDef {
  * Ordre d'une nuit : Courtisane 10, Protecteur 20, Oracle 30, Médium 33, Inquisiteur 36,
  * Instinct 40, Enchanteur 45, Spectres 50, Originel 52, Maudit 55, Sainte 60, Vipère 70,
  * Sectaire 80, Envoûteur 85, Nécromancien 90.
- * Première nuit, avant : Trinité 10, Doubles 12, Anathème 20, Adepte 30.
+ * Nuit d'explication (avant la partie) : Spectres (reconnaissance), Doubles 10, Trinité 12,
+ * Anathème 20, Adepte 30.
  */
 export const ROLES: Record<RoleId, RoleDef> = {
   spectre: {
@@ -132,7 +134,7 @@ export const ROLES: Record<RoleId, RoleDef> = {
     camp: 'pelerins',
     campVariable: true,
     cartes: 1,
-    reveil: { type: 'premiere-nuit', rang: 20 },
+    reveil: { type: 'explication', rang: 20 },
     usageUnique: false,
     description:
       'Choisit un modèle au début de la partie. Si le modèle meurt, il bascule dans le camp des Spectres. Sinon, il joue avec les Pèlerins.',
@@ -143,7 +145,7 @@ export const ROLES: Record<RoleId, RoleDef> = {
     camp: 'pelerins',
     campVariable: true,
     cartes: 1,
-    reveil: { type: 'premiere-nuit', rang: 30 },
+    reveil: { type: 'explication', rang: 30 },
     usageUnique: false,
     description:
       'Désigne secrètement un mentor. À sa mort, hérite de son rôle avec tous les pouvoirs réinitialisés (sans la mémoire). Si le mentor est Spectre, bascule chez les Spectres.',
@@ -174,10 +176,10 @@ export const ROLES: Record<RoleId, RoleDef> = {
     camp: 'trinite',
     campVariable: true,
     cartes: 3,
-    reveil: { type: 'premiere-nuit', rang: 10 },
+    reveil: { type: 'explication', rang: 12 },
     usageUnique: false,
     description:
-      "Les 3 membres se reconnaissent la première nuit. Tant qu'ils sont 3 en vie, ils gagnent uniquement entre eux. Dès qu'un membre meurt, ils basculent chez les Pèlerins.",
+      "Les 3 membres se reconnaissent pendant la nuit d'explication. Tant qu'ils sont 3 en vie, ils gagnent uniquement entre eux. Dès qu'un membre meurt, ils basculent chez les Pèlerins.",
   },
   devoue: {
     id: 'devoue',
@@ -280,10 +282,10 @@ export const ROLES: Record<RoleId, RoleDef> = {
     camp: 'doubles',
     campVariable: true,
     cartes: 2,
-    reveil: { type: 'premiere-nuit', rang: 12 },
+    reveil: { type: 'explication', rang: 10 },
     usageUnique: false,
     description:
-      "Les 2 Doubles se reconnaissent la première nuit et gagnent seules tant qu'elles sont 2. Dès qu'une meurt, la survivante passe chez les Pèlerins.",
+      "Les 2 Doubles se reconnaissent pendant la nuit d'explication et gagnent seules tant qu'elles sont 2. Dès qu'une meurt, la survivante passe chez les Pèlerins.",
   },
   sectaire: {
     id: 'sectaire',
@@ -334,21 +336,23 @@ export function getRole(id: RoleId): RoleDef {
   return ROLES[id];
 }
 
-/**
- * Rôles appelés à une nuit, triés par rang de réveil.
- * Première nuit : d'abord les rôles « première nuit » (reconnaissances,
- * modèle, mentor), puis la nuit normale.
- * Le filtre « si en vie / si occupé » se fera dans nuit.ts, avec l'état.
- */
-export function rolesQuiSeReveillent(premiereNuit: boolean): RoleDef[] {
-  const tous = Object.values(ROLES);
-  const parRang = (type: Reveil['type']) =>
-    tous
-      .filter((r) => r.reveil.type === type)
-      .sort((a, b) => rang(a) - rang(b));
+/** Rôles appelés chaque nuit de la partie, triés par rang de réveil. */
+export function rolesDeLaNuit(): RoleDef[] {
+  return parRang('chaque-nuit');
+}
 
-  const chaqueNuit = parRang('chaque-nuit');
-  return premiereNuit ? [...parRang('premiere-nuit'), ...chaqueNuit] : chaqueNuit;
+/**
+ * Rôles appelés pendant la nuit d'explication, triés par rang.
+ * (Les Spectres s'y reconnaissent aussi : voir premiere-nuit.ts.)
+ */
+export function rolesDeLExplication(): RoleDef[] {
+  return parRang('explication');
+}
+
+function parRang(type: 'chaque-nuit' | 'explication'): RoleDef[] {
+  return Object.values(ROLES)
+    .filter((r) => r.reveil.type === type)
+    .sort((a, b) => rang(a) - rang(b));
 }
 
 function rang(role: RoleDef): number {

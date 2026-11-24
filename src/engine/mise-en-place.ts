@@ -28,7 +28,7 @@ export function choisirPlan(salle: string, nbJoueurs: number, plans: Plan[] = PL
 /**
  * Crée la partie à partir d'un plan : un joueur par siège, le rôle vient du siège.
  * `prenoms` est facultatif : prenoms[0] = siège 1, etc. (null = pas de prénom).
- * La partie démarre à la première nuit.
+ * La partie démarre par la nuit d'explication (présentation des rôles, reconnaissances).
  */
 export function creerPartie(plan: Plan, prenoms: (string | null)[] = []): EtatPartie {
   const erreurs = validerPlan(plan);
@@ -61,7 +61,7 @@ export function creerPartie(plan: Plan, prenoms: (string | null)[] = []): EtatPa
   return {
     planId: plan.id,
     joueurs,
-    phase: { type: 'nuit', numero: 1, etape: 0 },
+    phase: { type: 'explication', etape: 0 },
     alpha: porteurAlpha?.id ?? null,
     victimeSpectres: null,
     sauveeParSainte: false,

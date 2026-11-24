@@ -1,5 +1,5 @@
 // Outils partagés par les tests (ce n'est pas un fichier de test).
-import { appliquer, etapeSuivante, type Action, type EtatPartie } from '../../src/engine';
+import { appliquer, creerPartie, etapeSuivante, type Action, type EtatPartie } from '../../src/engine';
 import type { Plan } from '../../src/engine/plans';
 import type { RoleId } from '../../src/engine/types';
 
@@ -59,4 +59,36 @@ export function jouerJusquA(etat: EtatPartie, role: RoleId, actions: Partial<Rec
 /** Joue la nuit puis valide la résolution : on arrive au jour. */
 export function finirNuit(etat: EtatPartie, actions: Partial<Record<RoleId, Action>> = {}): EtatPartie {
   return appliquer(jouerNuit(etat, actions), { type: 'passer' });
+}
+
+/** Choix faits pendant la nuit d'explication (par défaut : le premier joueur possible). */
+export interface Depart {
+  modele?: number;
+  mentor?: number;
+  /** Alpha élu au jour 0 ; sans valeur, l'élection est repoussée au premier jour. */
+  alpha?: number;
+}
+
+/** Joue la nuit d'explication et le jour 0 : on arrive au début de la nuit 1. */
+export function demarrer(etat: EtatPartie, depart: Depart = {}): EtatPartie {
+  let suivant = etat;
+  while (suivant.phase.type === 'explication') {
+    const etape = etapeSuivante(suivant);
+    if (etape.type === 'reveil' && etape.role === 'anatheme') {
+      suivant = appliquer(suivant, { type: 'anatheme-choisir-modele', cible: depart.modele ?? etape.ciblesPossibles[0] });
+    } else if (etape.type === 'reveil' && etape.role === 'adepte') {
+      suivant = appliquer(suivant, { type: 'adepte-choisir-mentor', cible: depart.mentor ?? etape.ciblesPossibles[0] });
+    } else {
+      suivant = appliquer(suivant, { type: 'passer' });
+    }
+  }
+  if (suivant.phase.type === 'jour' && suivant.phase.numero === 0) {
+    suivant = appliquer(suivant, depart.alpha ? { type: 'elire-alpha', cible: depart.alpha } : { type: 'passer' });
+  }
+  return suivant;
+}
+
+/** Une partie prête à jouer : créée, nuit d'explication faite, au début de la nuit 1. */
+export function nouvellePartie(plan: Plan, prenoms?: (string | null)[], depart: Depart = {}): EtatPartie {
+  return demarrer(creerPartie(plan, prenoms), depart);
 }

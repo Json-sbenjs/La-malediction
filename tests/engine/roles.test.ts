@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ROLES, getRole, rolesQuiSeReveillent } from '../../src/engine/roles';
+import { ROLES, getRole, rolesDeLaNuit, rolesDeLExplication } from '../../src/engine/roles';
 
 describe('registre des rôles', () => {
   it("chaque entrée a l'id de sa clé", () => {
@@ -40,7 +40,7 @@ describe('registre des rôles', () => {
   });
 
   it("deux rôles d'une même nuit n'ont pas le même rang", () => {
-    for (const type of ['chaque-nuit', 'premiere-nuit'] as const) {
+    for (const type of ['chaque-nuit', 'explication'] as const) {
       const rangs = Object.values(ROLES).flatMap((r) =>
         r.reveil.type === type ? [r.reveil.rang] : [],
       );
@@ -51,16 +51,14 @@ describe('registre des rôles', () => {
 
 describe('ordre de réveil', () => {
   it("nuit normale : la Courtisane d'abord, la Sainte après les Spectres", () => {
-    const ordre = rolesQuiSeReveillent(false).map((r) => r.id);
+    const ordre = rolesDeLaNuit().map((r) => r.id);
     expect(ordre[0]).toBe('courtisane');
     expect(ordre.indexOf('sainte')).toBeGreaterThan(ordre.indexOf('spectre'));
     expect(ordre).not.toContain('anatheme');
     expect(ordre).not.toContain('pelerin');
   });
 
-  it('première nuit : reconnaissances et choix avant la nuit normale', () => {
-    const ordre = rolesQuiSeReveillent(true).map((r) => r.id);
-    expect(ordre.slice(0, 4)).toEqual(['trinite', 'doubles', 'anatheme', 'adepte']);
-    expect(ordre).toContain('spectre');
+  it("nuit d'explication : Doubles, Trinité, puis Anathème et Adepte", () => {
+    expect(rolesDeLExplication().map((r) => r.id)).toEqual(['doubles', 'trinite', 'anatheme', 'adepte']);
   });
 });

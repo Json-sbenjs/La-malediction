@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { appliquer, creerPartie, etapeSuivante } from '../../src/engine';
-import { PLAN_COMPLET, finirNuit, jouerJusquA, jouerNuit } from './aides';
+import { appliquer, etapeSuivante } from '../../src/engine';
+import { PLAN_COMPLET, finirNuit, jouerJusquA, jouerNuit, nouvellePartie } from './aides';
 
-const partie = () => creerPartie(PLAN_COMPLET);
+const partie = () => nouvellePartie(PLAN_COMPLET);
 
 describe('résolution de la nuit', () => {
   it('la victime des Spectres meurt', () => {

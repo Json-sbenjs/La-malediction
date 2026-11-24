@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { creerPartie } from '../../src/engine';
 import { verifierVictoire } from '../../src/engine/victoire';
-import { PLAN_COMPLET, planDeTest } from './aides';
+import { PLAN_COMPLET, nouvellePartie, planDeTest } from './aides';
 
 function avecMorts(morts: number[], plan = PLAN_COMPLET) {
-  const etat = creerPartie(plan);
+  const etat = nouvellePartie(plan);
   for (const j of etat.joueurs) if (morts.includes(j.id)) j.vivant = false;
   return etat;
 }
 
 describe('victoire', () => {
   it('personne ne gagne en début de partie', () => {
-    expect(verifierVictoire(creerPartie(PLAN_COMPLET))).toBeNull();
+    expect(verifierVictoire(nouvellePartie(PLAN_COMPLET))).toBeNull();
   });
 
   it('les Pèlerins gagnent quand tous les Spectres sont morts', () => {

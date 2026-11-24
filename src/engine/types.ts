@@ -96,11 +96,14 @@ export interface Joueur {
 
 /**
  * Où en est la partie. Union discriminée sur `type`.
- * La première nuit, c'est `nuit` avec `numero: 1`.
- * `etape` = position dans l'ordre de réveil (voir nuit.ts).
+ * Déroulé : nuit d'explication → jour 0 (élection de l'Alpha) → nuit 1 → jour 1 → nuit 2…
+ * `etape` = position dans l'ordre de réveil (voir premiere-nuit.ts et nuit.ts).
  */
 export type Phase =
+  /** Nuit d'explication : présentation des rôles, reconnaissances, modèle et mentor. Personne ne meurt. */
+  | { type: 'explication'; etape: number }
   | { type: 'nuit'; numero: number; etape: number }
+  /** Jour 0 : juste l'élection de l'Alpha, avant la première nuit. */
   | { type: 'jour'; numero: number }
   /** gagnants = null : tout le monde est mort, personne ne gagne. */
   | { type: 'fin'; gagnants: Camp | null };
@@ -147,6 +150,8 @@ export interface EtatPartie {
 
 /** Ce que le MJ doit faire maintenant. Renvoyé par `etapeSuivante(etat)`. */
 export type Etape =
+  /** Début de la nuit d'explication : les rôles en jeu, à présenter à la table. */
+  | { type: 'presentation'; roles: { role: RoleId; nombre: number }[] }
   | {
       type: 'reveil';
       role: RoleId;

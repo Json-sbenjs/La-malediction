@@ -18,6 +18,7 @@ import {
   type Joueur,
   type JoueurId,
   type Plan,
+  type RoleId,
 } from '../engine';
 import { consigneReveil, modeSaisie } from './consignes';
 import { clicGenerateur, ecranGenerateur, nouveauGenerateur, type EtatGenerateur } from './generateur';
@@ -157,6 +158,18 @@ function illustration(role: string, alt: string): string {
   return `<img class="illustration" src="${image(role)}" alt="${echapper(alt)}">`;
 }
 
+/** Camp de départ d'un rôle, pour l'écran de présentation. */
+const NOM_CAMP_ROLE: Record<Camp, string> = {
+  pelerins: 'Pèlerins',
+  spectres: 'Spectres',
+  trinite: 'Solitaire, puis Pèlerins',
+  doubles: 'Solitaire, puis Pèlerins',
+  maudit: 'Solitaire',
+  sectaire: 'Solitaire',
+  envouteur: 'Solitaire',
+  necromancien: 'Solitaire',
+};
+
 const VICTOIRE: Record<Camp, string> = {
   pelerins: 'Victoire des Pèlerins',
   spectres: 'Victoire des Spectres',
@@ -188,10 +201,16 @@ function bouton(texte: string, attrs: string, classe = ''): string {
   return `<button type="button" class="${classe}" ${attrs}>${texte}</button>`;
 }
 
+/** La partie est dans la nuit d'explication (avant la première nuit). */
+function enExplication(): boolean {
+  return ui.etat?.phase.type === 'explication';
+}
+
 function titrePhase(etat: EtatPartie): string {
   const p = etat.phase;
+  if (p.type === 'explication') return "📜 Nuit d'explication";
   if (p.type === 'nuit') return p.numero === 1 ? '🌙 Première nuit' : `🌙 Nuit ${p.numero}`;
-  if (p.type === 'jour') return `☀️ Jour ${p.numero}`;
+  if (p.type === 'jour') return p.numero === 0 ? "☀️ Élection de l'Alpha" : `☀️ Jour ${p.numero}`;
   return '🏁 Fin de partie';
 }
 
@@ -199,7 +218,7 @@ function titrePhase(etat: EtatPartie): string {
 function siegesActifs(etape: Etape): JoueurId[] {
   switch (etape.type) {
     case 'reveil':
-      return modeSaisie(etape.role).type === 'cibles' ? etape.ciblesPossibles : [];
+      return modeSaisie(etape.role, enExplication()).type === 'cibles' ? etape.ciblesPossibles : [];
     case 'decision':
       return etape.ciblesPossibles;
     case 'election-alpha':
@@ -213,7 +232,7 @@ function siegesActifs(etape: Etape): JoueurId[] {
 
 function nombreACocher(etape: Etape): number {
   if (etape.type === 'reveil') {
-    const mode = modeSaisie(etape.role);
+    const mode = modeSaisie(etape.role, enExplication());
     return mode.type === 'cibles' ? Math.min(mode.nombre, etape.ciblesPossibles.length) : 0;
   }
   return 1;
@@ -305,13 +324,15 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
   const valider = (pret: boolean) => bouton('Valider', `data-valider ${pret ? '' : 'disabled'}`, 'principal');
 
   switch (etape.type) {
+    case 'presentation':
+      return ''; // écran à part : ecranPresentation
     case 'reveil': {
       const contexte = {
-        premiereNuit: etat.phase.type === 'nuit' && etat.phase.numero === 1,
+        explication: etat.phase.type === 'explication',
         augure: etat.joueurs.some((j) => j.vivant && j.role === 'augure'),
         maudit: etat.joueurs.some((j) => j.vivant && j.role === 'maudit'),
       };
-      const mode = modeSaisie(etape.role);
+      const mode = modeSaisie(etape.role, enExplication());
       const nombre = nombreACocher(etape);
       const qui = etape.acteurs.map(nom).join(', ');
       let saisie = '';
@@ -420,9 +441,14 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
       return `
         ${illustration('alpha', "L'Alpha")}
         <h2 class="titre-role">Élection de l'Alpha</h2>
-        <p class="consigne">Le village élit son Alpha : son vote comptera double.</p>
+        <p class="consigne">Le village élit son Alpha, le maire : son vote comptera double.${
+          etape.numero === 0 ? ' Ensuite, la partie commence par la première nuit.' : ''
+        }</p>
         <p>Élu : <strong>${choisis}</strong></p>
-        <div class="boutons">${valider(ui.selection.length === 1)}</div>`;
+        <div class="boutons">
+          ${valider(ui.selection.length === 1)}
+          ${etape.numero === 0 ? bouton('Élire plus tard', 'data-passer') : ''}
+        </div>`;
 
     case 'vote': {
       const nbVotes = Object.values(ui.votes).filter((v) => v !== null).length;
@@ -491,9 +517,42 @@ function ecranRevelation(id: JoueurId): string {
     </main>`;
 }
 
+/** Début de la nuit d'explication : les rôles en jeu, à présenter à la table. */
+function ecranPresentation(roles: { role: RoleId; nombre: number }[]): string {
+  const cartes = roles
+    .map(({ role, nombre }) => {
+      const def = ROLES[role];
+      return `
+        <li class="carte-role camp-${def.camp}">
+          <img src="${image(role)}" alt="">
+          <div>
+            <h3>${echapper(def.nom)}${nombre > 1 ? ` <span class="nombre">× ${nombre}</span>` : ''}</h3>
+            <p class="camp-role">${def.campVariable && def.camp === 'pelerins' ? 'Variable' : NOM_CAMP_ROLE[def.camp]}</p>
+            <p>${echapper(def.description)}</p>
+          </div>
+        </li>`;
+    })
+    .join('');
+  return `
+    <header class="barre">
+      <span class="phase">${titrePhase(ui.etat!)}</span>
+      ${bouton('Quitter', 'data-quitter', 'discret')}
+    </header>
+    <main class="presentation">
+      <div class="presentation-tete">
+        <h1>Les rôles en jeu</h1>
+        <p class="consigne">Présente chaque rôle à la table. Ensuite viennent les reconnaissances : Spectres, Doubles,
+          Trinité, puis le modèle de l'Anathème et le mentor de l'Adepte. Personne ne meurt cette nuit.</p>
+      </div>
+      <ul class="cartes-roles">${cartes}</ul>
+      <div class="boutons">${bouton('Commencer les réveils', 'data-passer', 'principal')}</div>
+    </main>`;
+}
+
 function ecranPartie(): string {
   const etat = ui.etat!;
   const etape = etapeSuivante(etat);
+  if (etape.type === 'presentation') return ecranPresentation(etape.roles);
   const actifs = siegesActifs(etape);
   let compte: Record<JoueurId, number> = {};
   if (etape.type === 'vote') {
@@ -580,7 +639,7 @@ function valider(): void {
   const [cible] = ui.selection;
   switch (etape.type) {
     case 'reveil': {
-      const mode = modeSaisie(etape.role);
+      const mode = modeSaisie(etape.role, enExplication());
       if (mode.type === 'cibles') jouer(mode.action(ui.selection));
       return;
     }
@@ -657,7 +716,7 @@ app.addEventListener('click', (evt) => {
   } else if (d.passerRole !== undefined) {
     const etape = etapeSuivante(ui.etat!);
     if (etape.type === 'reveil') {
-      const mode = modeSaisie(etape.role);
+      const mode = modeSaisie(etape.role, enExplication());
       if (mode.type === 'cibles' && mode.passer) return jouer(mode.passer.action);
     }
   } else if (d.sainte !== undefined) {
@@ -667,7 +726,7 @@ app.addEventListener('click', (evt) => {
   } else if (d.ouiNon !== undefined) {
     const etape = etapeSuivante(ui.etat!);
     if (etape.type === 'reveil') {
-      const mode = modeSaisie(etape.role);
+      const mode = modeSaisie(etape.role, enExplication());
       if (mode.type === 'oui-non') return jouer(d.ouiNon === 'oui' ? mode.oui.action : mode.non.action);
     }
   } else if (d.sacrifice !== undefined) {

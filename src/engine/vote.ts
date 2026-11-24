@@ -58,9 +58,16 @@ export function appliquerJour(etat: EtatPartie, phase: PhaseJour, action: Action
   const etape = etapeJour(etat, phase);
 
   if (etape.type === 'election-alpha') {
+    // Jour 0 : on peut repousser l'élection au premier jour (« Élire plus tard »).
+    if (phase.numero === 0 && action.type === 'passer') {
+      return { ...debutDeNuit(etat, 1), infoMJ: "Pas d'Alpha pour l'instant : élection au premier jour" };
+    }
     if (action.type !== 'elire-alpha') throw new Error("Il faut d'abord élire l'Alpha");
     verifierCible(etape.candidats, action.cible, 'Le village');
-    return { ...etat, alpha: action.cible, infoMJ: `${nomJoueur(trouverJoueur(etat, action.cible))} est élu Alpha` };
+    const info = `${nomJoueur(trouverJoueur(etat, action.cible))} est élu Alpha`;
+    // Jour 0 : l'élection faite, la partie commence par la première nuit.
+    if (phase.numero === 0) return { ...debutDeNuit({ ...etat, alpha: action.cible }, 1), infoMJ: info };
+    return { ...etat, alpha: action.cible, infoMJ: info };
   }
 
   let elimine: JoueurId | null;

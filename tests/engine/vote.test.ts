@@ -1,23 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { appliquer, compterVotes, creerPartie, etapeSuivante, type EtatPartie } from '../../src/engine';
-import { PLAN_COMPLET, finirNuit, planDeTest } from './aides';
+import { appliquer, compterVotes, etapeSuivante, type EtatPartie } from '../../src/engine';
+import { PLAN_COMPLET, finirNuit, nouvellePartie, planDeTest } from './aides';
 
 /** Partie au jour 1, personne n'est mort, Alpha = siège 3. */
 function auVote(): EtatPartie {
-  const etat = finirNuit(creerPartie(PLAN_COMPLET));
+  const etat = finirNuit(nouvellePartie(PLAN_COMPLET));
   return appliquer(etat, { type: 'elire-alpha', cible: 3 });
 }
 
 describe('le jour', () => {
   it("le premier jour, on élit d'abord l'Alpha", () => {
-    const etat = finirNuit(creerPartie(PLAN_COMPLET));
+    const etat = finirNuit(nouvellePartie(PLAN_COMPLET));
     expect(etapeSuivante(etat)).toMatchObject({ type: 'election-alpha', numero: 1 });
     expect(() => appliquer(etat, { type: 'vote', votes: {} })).toThrow(/Alpha/);
   });
 
   it("si l'Alpha est une carte du plan, pas d'élection", () => {
     const plan = planDeTest(['alpha', 'spectre', 'spectre', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin']);
-    const etat = finirNuit(creerPartie(plan));
+    const etat = finirNuit(nouvellePartie(plan));
     expect(etapeSuivante(etat)).toMatchObject({ type: 'vote', alpha: 1 });
   });
 

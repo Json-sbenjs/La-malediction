@@ -3,7 +3,8 @@ import type { Action, JoueurId, RoleId } from '../engine';
 
 /** Ce que le MJ doit savoir de la table pour adapter la consigne. */
 export interface ContexteConsigne {
-  premiereNuit: boolean;
+  /** Nuit d'explication : les Spectres se reconnaissent sans attaquer. */
+  explication: boolean;
   /** L'Augure est en vie : il peut espionner pendant le réveil des Spectres. */
   augure: boolean;
   /** Le Maudit est en vie : il se réveille avec les Spectres. */
@@ -45,9 +46,11 @@ export function consigneReveil(role: RoleId, contexte: ContexteConsigne): string
     case 'instinct':
       return "L'Instinct se réveille et désigne 3 joueurs.";
     case 'spectre': {
-      const base = contexte.premiereNuit
-        ? 'Les Spectres se réveillent, se reconnaissent et désignent leur victime.'
-        : 'Les Spectres se réveillent et désignent leur victime.';
+      if (contexte.explication) {
+        const maudit = contexte.maudit ? ' Le Maudit se réveille avec eux.' : '';
+        return `Les Spectres se réveillent et se reconnaissent, sans attaquer.${maudit}`;
+      }
+      const base = 'Les Spectres se réveillent et désignent leur victime.';
       const maudit = contexte.maudit ? ' Le Maudit se réveille avec eux.' : '';
       const augure = contexte.augure ? " L'Augure peut espionner, les yeux entrouverts." : '';
       return base + maudit + augure;
@@ -69,7 +72,9 @@ export type ModeSaisie =
   /** Une question oui / non (Enchanteur, Originel). */
   | { type: 'oui-non'; oui: { texte: string; action: Action }; non: { texte: string; action: Action } };
 
-export function modeSaisie(role: RoleId): ModeSaisie {
+export function modeSaisie(role: RoleId, explication = false): ModeSaisie {
+  // Nuit d'explication : les Spectres ne font que se reconnaître.
+  if (explication && role === 'spectre') return { type: 'aucune', bouton: 'Reconnaissance faite' };
   const une = (
     action: (cible: JoueurId) => Action,
     passer: { texte: string; action: Action } | null = { texte: 'Passer', action: { type: 'passer' } },

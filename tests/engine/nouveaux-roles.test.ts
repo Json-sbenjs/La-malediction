@@ -2,11 +2,11 @@
 import { describe, expect, it } from 'vitest';
 import { appliquer, creerPartie, etapeSuivante, type EtatPartie, type RoleId } from '../../src/engine';
 import { verifierVictoire } from '../../src/engine/victoire';
-import { finirNuit, jouerJusquA, jouerNuit, planDeTest } from './aides';
+import { finirNuit, jouerJusquA, jouerNuit, nouvellePartie, planDeTest } from './aides';
 
 const pelerins = (n: number): RoleId[] => Array.from({ length: n }, () => 'pelerin');
 /** Une partie sur un plan : siège 1, 2, 3… dans l'ordre des rôles donnés. */
-const partie = (roles: RoleId[]) => creerPartie(planDeTest(roles));
+const partie = (roles: RoleId[]) => nouvellePartie(planDeTest(roles));
 /** Passe au jour (Alpha élu au siège donné) puis applique un vote rapide. */
 function auVote(etat: EtatPartie, alpha: number): EtatPartie {
   return appliquer(etat, { type: 'elire-alpha', cible: alpha });
@@ -14,7 +14,7 @@ function auVote(etat: EtatPartie, alpha: number): EtatPartie {
 
 describe('Dévoué', () => {
   it('révélé à tous dès le début', () => {
-    const etat = partie(['devoue', 'spectre', ...pelerins(6)]);
+    const etat = creerPartie(planDeTest(['devoue', 'spectre', ...pelerins(6)]));
     expect(etat.joueurs[0].revele).toBe(true);
     expect(etat.infoMJ).toBe('Annonce à tous : siège 1 est le Dévoué');
   });
@@ -213,8 +213,9 @@ describe('Bourreau', () => {
 describe('Doubles', () => {
   const ROLES: RoleId[] = ['doubles', 'doubles', 'spectre', ...pelerins(5)];
 
-  it('se reconnaissent la première nuit', () => {
-    let etat = partie(ROLES);
+  it("se reconnaissent pendant la nuit d'explication", () => {
+    let etat = creerPartie(planDeTest(ROLES));
+    etat = appliquer(appliquer(etat, { type: 'passer' }), { type: 'passer' }); // présentation, Spectres
     expect(etapeSuivante(etat)).toMatchObject({ role: 'doubles', acteurs: [1, 2] });
     etat = appliquer(etat, { type: 'passer' });
     expect(etat.infoMJ).toBe('Doubles : siège 1, siège 2');

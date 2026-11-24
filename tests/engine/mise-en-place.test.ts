@@ -31,8 +31,8 @@ describe('creerPartie', () => {
     expect(etat.joueurs[4]).toMatchObject({ id: 5, role: 'spectre', camp: 'spectres' });
   });
 
-  it('démarre à la première nuit', () => {
-    expect(creerPartie(PLAN_NUIT).phase).toEqual({ type: 'nuit', numero: 1, etape: 0 });
+  it("démarre par la nuit d'explication", () => {
+    expect(creerPartie(PLAN_NUIT).phase).toEqual({ type: 'explication', etape: 0 });
   });
 
   it('prénoms facultatifs', () => {

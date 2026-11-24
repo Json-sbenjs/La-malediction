@@ -1,7 +1,6 @@
 import { nomJoueur, trouverJoueur, verifierCible, vivants } from './outils';
-import { CHOIX_OBLIGATOIRE, choisirLien, ciblesPremiereNuit, reconnaissance } from './premiere-nuit';
 import { mortsDeLaNuit, resoudreNuit } from './resolution-nuit';
-import { ROLES, rolesQuiSeReveillent } from './roles';
+import { ROLES, rolesDeLaNuit } from './roles';
 import type { Action, Etape, EtatPartie, Joueur, JoueurId, RoleId } from './types';
 
 type EtapeReveil = Extract<Etape, { type: 'reveil' }>;
@@ -23,18 +22,14 @@ const ACTION_DU_ROLE: Partial<Record<RoleId, Action['type']>> = {
   sectaire: 'sectaire-enroler',
   envouteur: 'envouteur-charmer',
   necromancien: 'necromancien-ressusciter',
-  ...CHOIX_OBLIGATOIRE,
 };
 
-/** Groupes qui se reconnaissent la première nuit (le MJ valide avec « passer »). */
-const GROUPES: Partial<Record<RoleId, string>> = { trinite: 'Trinité', doubles: 'Doubles' };
-
-/** Ordre de réveil de la nuit : seulement les rôles présents dans la partie. */
+/** Ordre de réveil d'une nuit de jeu : seulement les rôles présents dans la partie. */
 export function ordreDeNuit(etat: EtatPartie, numero: number): RoleId[] {
   const presents = new Set<RoleId>(etat.joueurs.map((j) => j.role));
   // Les Spectres se réveillent dès qu'il existe un joueur du camp (Originel, victime infectée…).
   if (etat.joueurs.some((j) => j.camp === 'spectres' || j.role === 'maudit')) presents.add('spectre');
-  return rolesQuiSeReveillent(numero === 1)
+  return rolesDeLaNuit()
     .map((r) => r.id)
     .filter((id) => presents.has(id));
 }
@@ -118,11 +113,6 @@ function ciblesDuRole(etat: EtatPartie, role: RoleId, numero: number, quiAgit: J
     case 'instinct':
     case 'vipere':
       return saufActeurs.map((j) => j.id);
-    case 'anatheme':
-    case 'adepte':
-      return ciblesPremiereNuit(etat, quiAgit);
-    case 'trinite':
-    case 'doubles':
     case 'medium':
     case 'enchanteur':
       return [];
@@ -187,9 +177,6 @@ export function appliquerNuit(etat: EtatPartie, phase: PhaseNuit, action: Action
   if (action.type !== 'passer' && action.type !== attendue) {
     throw new Error(`Action « ${action.type} » impossible : c'est au tour de ${nomRole}`);
   }
-  if (action.type === 'passer' && CHOIX_OBLIGATOIRE[etape.role]) {
-    throw new Error(`${nomRole} doit faire son choix`);
-  }
 
   const suivant: EtatPartie = structuredClone(etat);
   suivant.phase = { ...phase, etape: index + 1 };
@@ -251,12 +238,6 @@ export function appliquerNuit(etat: EtatPartie, phase: PhaseNuit, action: Action
       viser(action.cible);
       suivant.empoisonne = action.cible;
       acteur.memoire.pouvoirUtilise = true;
-      break;
-
-    case 'anatheme-choisir-modele':
-    case 'adepte-choisir-mentor':
-      viser(action.cible);
-      suivant.infoMJ = choisirLien(suivant, acteur, action.cible);
       break;
 
     case 'inquisiteur-marquer':
@@ -326,12 +307,8 @@ export function appliquerNuit(etat: EtatPartie, phase: PhaseNuit, action: Action
       break;
     }
 
-    case 'passer': {
-      // Reconnaissance (Trinité, Doubles) : le MJ a montré les membres, on continue.
-      const groupe = GROUPES[etape.role];
-      if (groupe) suivant.infoMJ = `${groupe} : ${reconnaissance(suivant, etape.acteurs)}`;
+    case 'passer':
       break;
-    }
   }
 
   return suivant;

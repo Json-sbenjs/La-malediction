@@ -2,6 +2,7 @@
 import { creerPartie as creer } from './mise-en-place';
 import { appliquerDecision, etapeDecision } from './mort';
 import { appliquerNuit, etapeNuit } from './nuit';
+import { appliquerExplication, etapeExplication } from './premiere-nuit';
 import type { Plan } from './plans';
 import type { Action, Etape, EtatPartie } from './types';
 import { verifierVictoire } from './victoire';
@@ -26,6 +27,9 @@ export function etapeSuivante(etat: EtatPartie): Etape {
   if (phase.type === 'fin') return { type: 'fin', gagnants: phase.gagnants };
   if (etat.decisions.length > 0) return etapeDecision(etat, etat.decisions[0]);
   switch (phase.type) {
+    case 'explication':
+      // Jamais null ici : une explication finie passe tout de suite au jour 0 ou à la nuit 1.
+      return etapeExplication(etat, phase) ?? { type: 'presentation', roles: [] };
     case 'nuit':
       return etapeNuit(etat, phase);
     case 'jour':
@@ -40,6 +44,7 @@ export function appliquer(etat: EtatPartie, action: Action): EtatPartie {
 
   let suivant: EtatPartie;
   if (etat.decisions.length > 0) suivant = appliquerDecision(etat, action);
+  else if (phase.type === 'explication') suivant = appliquerExplication(etat, phase, action);
   else if (phase.type === 'nuit') suivant = appliquerNuit(etat, phase, action);
   else suivant = appliquerJour(etat, phase, action);
 
