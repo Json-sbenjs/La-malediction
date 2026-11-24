@@ -1,0 +1,32 @@
+# Lance les tests et le typage à chaque push sur une branche de travail,
+# pour repérer une erreur AVANT de fusionner dans main.
+# (Sur main, c'est pages.yml qui teste avant de publier.)
+name: Tests
+
+on:
+  push:
+    branches-ignore: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Un nouveau push sur la même branche annule le run précédent.
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tester:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Tests du moteur (Vitest)
+        run: npm test
+      - name: Typage et build (tsc + Vite)
+        run: npm run build
