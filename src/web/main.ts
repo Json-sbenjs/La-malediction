@@ -17,8 +17,11 @@ import {
   type EtatPartie,
   type Joueur,
   type JoueurId,
+  type Historique,
   type Plan,
   type RoleId,
+  annuler,
+  memoriser,
 } from '../engine';
 import { consigneReveil, modeSaisie } from './consignes';
 import { clicGenerateur, ecranGenerateur, nouveauGenerateur, type EtatGenerateur } from './generateur';
@@ -81,6 +84,8 @@ interface Ui {
   generateur: EtatGenerateur | null;
   /** Rôle montré en plein écran à l'Oracle (null = rien à montrer). */
   revelation: JoueurId | null;
+  /** États d'avant chaque action, pour « Annuler ». */
+  historique: Historique;
 }
 
 const ui: Ui = {
@@ -88,6 +93,7 @@ const ui: Ui = {
   plan: null,
   generateur: null,
   revelation: null,
+  historique: [],
   salle: sallesDisponibles(tousLesPlans())[0] ?? '',
   nbJoueurs: 0,
   prenoms: [],
@@ -100,7 +106,9 @@ ui.nbJoueurs = nombresDeJoueurs(ui.salle, tousLesPlans())[0] ?? 0;
 
 function sauvegarder(): void {
   try {
-    if (ui.etat && ui.plan) localStorage.setItem(CLE_SAUVEGARDE, JSON.stringify({ etat: ui.etat, plan: ui.plan }));
+    if (ui.etat && ui.plan) {
+      localStorage.setItem(CLE_SAUVEGARDE, JSON.stringify({ etat: ui.etat, plan: ui.plan, historique: ui.historique }));
+    }
     else localStorage.removeItem(CLE_SAUVEGARDE);
   } catch {
     // Stockage indisponible (navigation privée…) : tant pis, la partie reste en mémoire.
@@ -111,9 +119,10 @@ function restaurer(): void {
   try {
     const brut = localStorage.getItem(CLE_SAUVEGARDE);
     if (!brut) return;
-    const { etat, plan } = JSON.parse(brut) as { etat: EtatPartie; plan: Plan };
+    const { etat, plan, historique } = JSON.parse(brut) as { etat: EtatPartie; plan: Plan; historique?: Historique };
     ui.etat = etat;
     ui.plan = plan;
+    ui.historique = historique ?? [];
   } catch {
     // Sauvegarde illisible : on repart de zéro.
   }
@@ -127,10 +136,24 @@ function viderSaisie(): void {
   ui.erreur = null;
 }
 
+/** Revient à l'état d'avant la dernière action du MJ. */
+function annulerDerniereAction(): void {
+  const retour = annuler(ui.historique);
+  if (!retour) return;
+  ui.etat = retour.etat;
+  ui.historique = retour.historique;
+  ui.revelation = null;
+  viderSaisie();
+  sauvegarder();
+  afficher();
+}
+
 function jouer(action: Action): void {
   if (!ui.etat) return;
   try {
-    ui.etat = appliquer(ui.etat, action);
+    const avant = ui.etat;
+    ui.etat = appliquer(avant, action);
+    ui.historique = memoriser(ui.historique, avant);
     viderSaisie();
     sauvegarder();
     // L'Oracle a désigné quelqu'un : on montre son rôle en grand pour le lui faire voir.
@@ -569,6 +592,7 @@ function ecranPartie(): string {
     <header class="barre">
       <span class="phase">${titrePhase(etat)}</span>
       <span class="actions-barre">
+        ${bouton('↶ Annuler', `data-annuler ${ui.historique.length === 0 ? 'disabled' : ''}`, 'discret')}
         ${etat.phase.type === 'explication' ? bouton("Passer l'explication", 'data-passer-explication', 'discret') : ''}
         ${bouton('Quitter', 'data-quitter', 'discret')}
       </span>
@@ -667,6 +691,8 @@ app.addEventListener('click', (evt) => {
   if (!el || el.hasAttribute('disabled')) return;
   const d = el.dataset;
 
+  if (d.annuler !== undefined) return annulerDerniereAction();
+
   // Révélation à l'Oracle : seul le bouton Continuer la ferme.
   if (d.finRevelation !== undefined) {
     ui.revelation = null;
@@ -708,6 +734,7 @@ app.addEventListener('click', (evt) => {
       const prenoms = Array.from({ length: plan.nbJoueurs }, (_, i) => ui.prenoms[i] || null);
       ui.etat = creerPartie(plan, prenoms);
       ui.plan = plan;
+      ui.historique = [];
       viderSaisie();
       sauvegarder();
       void garderEcranAllume();
@@ -759,11 +786,13 @@ app.addEventListener('click', (evt) => {
     if (!confirm('Abandonner la partie en cours ?')) return;
     ui.etat = null;
     ui.plan = null;
+    ui.historique = [];
     viderSaisie();
     sauvegarder();
   } else if (d.nouvelle !== undefined) {
     ui.etat = null;
     ui.plan = null;
+    ui.historique = [];
     viderSaisie();
     sauvegarder();
   }

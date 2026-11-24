@@ -67,3 +67,4 @@ export {
   type Forme,
 } from './generateur';
 export { MIN_JOUEURS } from './plans';
+export { LIMITE_HISTORIQUE, annuler, memoriser, type Historique } from './historique';
