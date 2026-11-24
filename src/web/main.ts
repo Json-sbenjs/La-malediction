@@ -78,12 +78,15 @@ interface Ui {
   erreur: string | null;
   /** Écran du générateur ouvert (null = fermé). */
   generateur: EtatGenerateur | null;
+  /** Rôle montré en plein écran à l'Oracle (null = rien à montrer). */
+  revelation: JoueurId | null;
 }
 
 const ui: Ui = {
   etat: null,
   plan: null,
   generateur: null,
+  revelation: null,
   salle: sallesDisponibles(tousLesPlans())[0] ?? '',
   nbJoueurs: 0,
   prenoms: [],
@@ -129,6 +132,8 @@ function jouer(action: Action): void {
     ui.etat = appliquer(ui.etat, action);
     viderSaisie();
     sauvegarder();
+    // L'Oracle a désigné quelqu'un : on montre son rôle en grand pour le lui faire voir.
+    if (action.type === 'oracle-voir') ui.revelation = action.cible;
   } catch (e) {
     ui.erreur = e instanceof Error ? e.message : String(e);
   }
@@ -369,8 +374,20 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
       return `
         <h2>Vote du village</h2>
         <p class="consigne">Touche un votant, puis le joueur qu'il vise. La voix de l'Alpha 👑 compte double.</p>
-        <p>${ui.votant === null ? 'Touche un votant.' : `${nom(ui.votant)} vote contre… (touche-le à nouveau pour annuler)`}</p>
+        <p>${
+          ui.votant === null
+            ? 'Touche un votant, ou directement le joueur à éliminer.'
+            : `${nom(ui.votant)} vote contre… (touche-le à nouveau pour annuler)`
+        }</p>
         ${classement ? `<ul class="classement">${classement}</ul>` : ''}
+        ${
+          ui.votant === null
+            ? ''
+            : `<div class="raccourci">
+                 <p>Vote rapide : pas besoin de saisir les voix.</p>
+                 ${bouton(`Éliminer directement ${nom(ui.votant)}`, `data-eliminer="${ui.votant}"`, 'sang')}
+               </div>`
+        }
         <div class="boutons">
           ${bouton(`Valider le vote (${nbVotes})`, `data-voter ${nbVotes === 0 ? 'disabled' : ''}`, 'principal')}
           ${bouton('Personne n\'est éliminé', 'data-passer')}
@@ -390,6 +407,19 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
         }</p>
         <div class="boutons">${bouton('Nouvelle partie', 'data-nouvelle', 'principal')}</div>`;
   }
+}
+
+/** Plein écran pour montrer à l'Oracle le rôle du joueur qu'il a désigné. */
+function ecranRevelation(id: JoueurId): string {
+  const joueur = ui.etat!.joueurs.find((j) => j.id === id)!;
+  const role = ROLES[joueur.role];
+  return `
+    <main class="revelation" aria-label="Rôle à montrer à l'Oracle">
+      <p class="revelation-qui">${nom(id)}</p>
+      <img class="revelation-carte" src="${image(joueur.role)}" alt="">
+      <h1 class="revelation-role">${echapper(role.nom)}</h1>
+      ${bouton('Continuer', 'data-fin-revelation', 'discret')}
+    </main>`;
 }
 
 function ecranPartie(): string {
@@ -431,7 +461,13 @@ function themeVoulu(): 'nuit' | 'jour' {
 const moinsDAnimations = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 function afficher(): void {
-  app.innerHTML = ui.generateur ? ecranGenerateur(ui.generateur) : ui.etat ? ecranPartie() : ecranChoix();
+  app.innerHTML = ui.generateur
+    ? ecranGenerateur(ui.generateur)
+    : ui.etat && ui.revelation !== null
+      ? ecranRevelation(ui.revelation)
+      : ui.etat
+        ? ecranPartie()
+        : ecranChoix();
 
   // Bascule nuit / jour : fondu de 600 ms (le fond de page change en douceur via le CSS).
   const theme = themeVoulu();
@@ -494,6 +530,12 @@ app.addEventListener('click', (evt) => {
   if (!el || el.hasAttribute('disabled')) return;
   const d = el.dataset;
 
+  // Révélation à l'Oracle : seul le bouton Continuer la ferme.
+  if (d.finRevelation !== undefined) {
+    ui.revelation = null;
+    return afficher();
+  }
+
   // Générateur de salle
   if (ui.generateur) {
     const resultat = clicGenerateur(ui.generateur, d);
@@ -553,6 +595,8 @@ app.addEventListener('click', (evt) => {
     return jouer({ type: 'sainte-sauver', utiliser: d.sainte === 'oui' });
   } else if (d.usurper !== undefined) {
     return jouer({ type: 'usurpateur-remplacer', cible: Number(d.usurper) });
+  } else if (d.eliminer !== undefined) {
+    return jouer({ type: 'eliminer', cible: Number(d.eliminer) });
   } else if (d.voter !== undefined) {
     return jouer({ type: 'vote', votes: ui.votes });
   } else if (d.quitter !== undefined) {

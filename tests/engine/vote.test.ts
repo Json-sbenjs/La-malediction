@@ -62,6 +62,24 @@ describe('après le vote', () => {
     expect(etapeSuivante(etat)).toMatchObject({ type: 'reveil', role: 'courtisane' });
   });
 
+  it('vote rapide : le MJ élimine directement un joueur', () => {
+    const etat = appliquer(auVote(), { type: 'eliminer', cible: 6 });
+    expect(etat.joueurs[5].vivant).toBe(false);
+    expect(etat.phase).toEqual({ type: 'nuit', numero: 2, etape: 0 });
+    expect(etat.infoMJ).toBe('Le village élimine siège 6');
+  });
+
+  it('vote rapide : pas sur un mort', () => {
+    const etat = auVote();
+    etat.joueurs[5].vivant = false;
+    expect(() => appliquer(etat, { type: 'eliminer', cible: 6 })).toThrow(/ne peut pas viser/);
+  });
+
+  it("vote rapide : les effets à la mort s'appliquent (Main Noire)", () => {
+    const etat = appliquer(auVote(), { type: 'eliminer', cible: 9 });
+    expect(etapeSuivante(etat)).toMatchObject({ type: 'decision', decision: { type: 'main-noire', tireur: 9 } });
+  });
+
   it("l'Alpha reste en place d'un jour à l'autre", () => {
     let etat = appliquer(auVote(), { type: 'passer' });
     etat = finirNuit(etat);

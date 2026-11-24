@@ -60,10 +60,25 @@ export function appliquerJour(etat: EtatPartie, phase: PhaseJour, action: Action
     return { ...etat, alpha: action.cible, infoMJ: `${nomJoueur(trouverJoueur(etat, action.cible))} est élu Alpha` };
   }
 
-  if (action.type !== 'vote' && action.type !== 'passer') {
-    throw new Error("C'est l'heure du vote du village");
+  let elimine: JoueurId | null;
+  switch (action.type) {
+    case 'vote':
+      elimine = compterVotes(etat, action.votes).elimine;
+      break;
+    case 'eliminer':
+      verifierCible(
+        vivants(etat).map((j) => j.id),
+        action.cible,
+        'Le village',
+      );
+      elimine = action.cible;
+      break;
+    case 'passer':
+      elimine = null;
+      break;
+    default:
+      throw new Error("C'est l'heure du vote du village");
   }
-  const { elimine } = action.type === 'vote' ? compterVotes(etat, action.votes) : { elimine: null };
 
   let suivant: EtatPartie = structuredClone(etat);
   if (elimine !== null) tuer(suivant, elimine);

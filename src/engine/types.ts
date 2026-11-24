@@ -146,6 +146,8 @@ export type Action =
   // Jour
   | { type: 'elire-alpha'; cible: JoueurId }
   | { type: 'vote'; votes: Record<JoueurId, JoueurId | null> }
+  /** Vote rapide : le MJ désigne directement le joueur éliminé, sans saisir chaque voix. */
+  | { type: 'eliminer'; cible: JoueurId }
   // Effets à la mort
   | { type: 'main-noire-tirer'; cible: JoueurId }
   | { type: 'alpha-successeur'; cible: JoueurId }
