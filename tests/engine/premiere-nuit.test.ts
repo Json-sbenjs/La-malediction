@@ -123,3 +123,36 @@ describe("nuit d'explication", () => {
     expect(etat.phase).toEqual({ type: 'nuit', numero: 1, etape: 0 });
   });
 });
+
+describe("passer toute la nuit d'explication", () => {
+  it("va directement à l'élection de l'Alpha, sans reconnaissance ni choix", () => {
+    let etat = appliquer(creerPartie(PLAN), { type: 'passer' }); // déjà un rôle passé
+    etat = appliquer(etat, { type: 'passer-explication' });
+    expect(etat.phase).toEqual({ type: 'jour', numero: 0 });
+    expect(etat.joueurs[3].memoire.lien).toBeNull();
+    expect(etat.infoMJ).toBe("Nuit d'explication passée : L'Anathème et L'Adepte sans modèle ni mentor");
+  });
+
+  it('garde les choix déjà faits', () => {
+    let etat = creerPartie(PLAN);
+    for (let i = 0; i < 3; i++) etat = appliquer(etat, { type: 'passer' });
+    etat = appliquer(etat, { type: 'anatheme-choisir-modele', cible: 8 });
+    etat = appliquer(etat, { type: 'passer-explication' });
+    expect(etat.joueurs[3].memoire.lien).toBe(8);
+    expect(etat.infoMJ).toBe("Nuit d'explication passée : L'Adepte sans modèle ni mentor");
+  });
+
+  it("avec la carte Alpha sur un siège, direction la première nuit", () => {
+    const etat = appliquer(
+      creerPartie(planDeTest(['alpha', 'spectre', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'oracle'])),
+      { type: 'passer-explication' },
+    );
+    expect(etat.phase).toEqual({ type: 'nuit', numero: 1, etape: 0 });
+    expect(etat.infoMJ).toBe("Nuit d'explication passée");
+  });
+
+  it("n'est possible que pendant l'explication", () => {
+    const etat = demarrer(creerPartie(PLAN));
+    expect(() => appliquer(etat, { type: 'passer-explication' })).toThrow();
+  });
+});

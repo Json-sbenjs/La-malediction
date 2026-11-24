@@ -170,6 +170,7 @@ button:disabled { opacity: 0.4; cursor: default; }
   top: 0;
   z-index: 2;
 }
+.actions-barre { display: flex; gap: var(--espace-2); flex-wrap: wrap; justify-content: flex-end; }
 .phase { font: 400 24px/1.2 var(--font-onciale); letter-spacing: 0.03em; color: var(--or); }
 
 .partie {

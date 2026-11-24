@@ -107,6 +107,18 @@ export function appliquerExplication(etat: EtatPartie, phase: PhaseExplication, 
   suivant.infoMJ = null;
   const nomRole = ROLES[etape.role].nom;
 
+  // Le MJ saute toute l'explication : direction l'élection de l'Alpha (ou la première nuit).
+  if (action.type === 'passer-explication') {
+    const sansChoix = suivant.joueurs.filter((j) => (j.role === 'anatheme' || j.role === 'adepte') && j.memoire.lien === null);
+    const fin = finExplication(suivant);
+    return {
+      ...fin,
+      infoMJ:
+        "Nuit d'explication passée" +
+        (sansChoix.length > 0 ? ` : ${sansChoix.map((j) => ROLES[j.role].nom).join(' et ')} sans modèle ni mentor` : ''),
+    };
+  }
+
   if (etape.mode === 'choix') {
     if (action.type !== 'anatheme-choisir-modele' && action.type !== 'adepte-choisir-mentor') {
       throw new Error(`${nomRole} doit faire son choix`);

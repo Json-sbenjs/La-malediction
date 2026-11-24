@@ -205,6 +205,8 @@ export type Action =
   | { type: 'necromancien-ressusciter'; cible: JoueurId | null }
   // Première nuit
   | { type: 'anatheme-choisir-modele'; cible: JoueurId }
+  /** Sauter toute la nuit d'explication (sans reconnaissances ni choix de modèle / mentor). */
+  | { type: 'passer-explication' }
   | { type: 'adepte-choisir-mentor'; cible: JoueurId }
   // Jour
   | { type: 'elire-alpha'; cible: JoueurId }

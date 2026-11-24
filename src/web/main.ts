@@ -568,7 +568,10 @@ function ecranPartie(): string {
   return `
     <header class="barre">
       <span class="phase">${titrePhase(etat)}</span>
-      ${bouton('Quitter', 'data-quitter', 'discret')}
+      <span class="actions-barre">
+        ${etat.phase.type === 'explication' ? bouton("Passer l'explication", 'data-passer-explication', 'discret') : ''}
+        ${bouton('Quitter', 'data-quitter', 'discret')}
+      </span>
     </header>
     <main class="partie">
       <section class="salle ${densite(etat.joueurs.length)}" aria-label="Plan de la salle">
@@ -729,6 +732,15 @@ app.addEventListener('click', (evt) => {
     return jouer({ type: 'sainte-sauver', utiliser: d.sainte === 'oui' });
   } else if (d.usurper !== undefined) {
     return jouer({ type: 'usurpateur-remplacer', cible: Number(d.usurper) });
+  } else if (d.passerExplication !== undefined) {
+    const sansChoix = ui.etat!.joueurs.some(
+      (j) => (j.role === 'anatheme' || j.role === 'adepte') && j.memoire.lien === null,
+    );
+    const message =
+      "Passer toute la nuit d'explication ?" +
+      (sansChoix ? "\nL'Anathème et l'Adepte qui n'ont pas encore choisi joueront sans modèle ni mentor." : '');
+    if (!confirm(message)) return;
+    return jouer({ type: 'passer-explication' });
   } else if (d.ouiNon !== undefined) {
     const etape = etapeSuivante(ui.etat!);
     if (etape.type === 'reveil') {
