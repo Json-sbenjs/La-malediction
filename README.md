@@ -73,8 +73,9 @@ asset/               planche des cartes (PDF)
 
 ### Principe
 
-Déroulé d'une partie : **nuit d'explication** (les rôles de la partie, un par un : le MJ explique chacun ; au passage
-des Spectres, Doubles et Trinité, ils se reconnaissent ; l'Anathème et l'Adepte choisissent modèle et mentor ;
+Déroulé d'une partie : **nuit d'explication** (seulement les rôles de la partie, un par un, dans l'ordre du jeu :
+d'abord la meute des Spectres, les Doubles et la Trinité qui se reconnaissent, l'Anathème et l'Adepte qui choisissent
+modèle et mentor ; puis les rôles de la nuit dans l'ordre des réveils ; enfin les rôles du jour et des morts ;
 personne ne meurt) → **élection de l'Alpha** (le maire) →
 **première nuit** → jour 1 (vote) → nuit 2…
 

@@ -1,12 +1,13 @@
 // Nuit d'explication (« première nuit » du FigJam), avant que la partie commence.
-// Le MJ passe les rôles de la partie un par un (seulement ceux qui sont en jeu) :
+// Le MJ passe les rôles de la partie un par un (seulement ceux qui sont en jeu), dans l'ordre où ils agiront
+// (voir ordreDesRoles) :
 // - il explique chaque rôle à la table ;
 // - au passage des Spectres, des Doubles et de la Trinité, ils se réveillent et se reconnaissent ;
 // - au passage de l'Anathème et de l'Adepte, ils choisissent leur modèle ou leur mentor.
 // Personne ne meurt. Ensuite : jour 0 (élection de l'Alpha), puis la première vraie nuit.
 import { debutDeNuit } from './nuit';
 import { nomJoueur, trouverJoueur, verifierCible, vivants } from './outils';
-import { ROLES } from './roles';
+import { ROLES, rolesDeLaNuit } from './roles';
 import type { Action, Etape, EtatPartie, JoueurId, RoleId } from './types';
 
 type PhaseExplication = Extract<EtatPartie['phase'], { type: 'explication' }>;
@@ -21,13 +22,38 @@ const CHOIX: Partial<Record<RoleId, Action['type']>> = {
 /** Rôles du camp Spectres qui se réveillent ensemble ; le premier présent de la liste lance la reconnaissance. */
 const FAMILLE_SPECTRES: RoleId[] = ['spectre', 'originel', 'maudit'];
 
-/** Les rôles en jeu et leur nombre, dans l'ordre du registre (Spectres d'abord). */
+/** Rôles qui ne se réveillent jamais : ils agissent le jour ou à une mort. Expliqués en dernier. */
+const SANS_REVEIL: RoleId[] = ['pelerin', 'devoue', 'alpha', 'main-noire', 'usurpateur', 'sacrifie', 'bourreau'];
+
+/**
+ * L'ordre d'explication des rôles, pour raconter la partie dans l'ordre où elle se joue :
+ * 1. ce qui se passe pendant la nuit d'explication : la meute des Spectres se reconnaît,
+ *    puis Doubles, Trinité, Anathème (modèle), Adepte (mentor) ;
+ * 2. une nuit de jeu, dans l'ordre des réveils (l'Augure juste après la meute, qu'elle espionne) ;
+ * 3. les rôles sans réveil : le jour et les morts.
+ */
+export function ordreDesRoles(etat: EtatPartie): RoleId[] {
+  const presents = new Set(etat.joueurs.map((j) => j.role));
+  const meute = FAMILLE_SPECTRES.find((r) => presents.has(r)) ?? 'spectre';
+
+  const nuit: RoleId[] = [];
+  for (const { id } of rolesDeLaNuit()) {
+    nuit.push(id);
+    if (id === 'maudit') nuit.push('augure');
+  }
+
+  const ordre = [meute, 'doubles', 'trinite', 'anatheme', 'adepte', ...nuit, ...SANS_REVEIL] as RoleId[];
+  const resultat = [...new Set(ordre)].filter((r) => presents.has(r));
+  // Par sécurité, un rôle oublié dans les listes passe à la fin.
+  for (const r of presents) if (!resultat.includes(r)) resultat.push(r);
+  return resultat;
+}
+
+/** Les rôles en jeu et leur nombre, dans l'ordre d'explication. */
 export function rolesEnJeu(etat: EtatPartie): { role: RoleId; nombre: number }[] {
   const compte = new Map<RoleId, number>();
   for (const j of etat.joueurs) compte.set(j.role, (compte.get(j.role) ?? 0) + 1);
-  return (Object.keys(ROLES) as RoleId[])
-    .filter((role) => compte.has(role))
-    .map((role) => ({ role, nombre: compte.get(role)! }));
+  return ordreDesRoles(etat).map((role) => ({ role, nombre: compte.get(role)! }));
 }
 
 /** Ce que fait le rôle pendant l'explication, et qui se réveille. */

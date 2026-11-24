@@ -26,17 +26,31 @@ function parcourir(etat: EtatPartie): string[] {
 }
 
 describe("nuit d'explication", () => {
-  it('passe les rôles de la partie un par un, et seulement eux', () => {
+  it('passe les rôles de la partie un par un, seulement eux, dans l\'ordre du jeu', () => {
     const etat = creerPartie(PLAN);
     expect(etat.phase).toEqual({ type: 'explication', etape: 0 });
+    // Nuit d'explication (Spectres, Doubles, Trinité, Anathème, Adepte), puis l'ordre des réveils.
     expect(parcourir(etat)).toEqual([
       '1/7 spectre reconnaissance',
-      '2/7 oracle presentation',
-      '3/7 anatheme choix',
-      '4/7 adepte choix',
-      '5/7 trinite reconnaissance',
-      '6/7 maudit presentation',
-      '7/7 doubles reconnaissance',
+      '2/7 doubles reconnaissance',
+      '3/7 trinite reconnaissance',
+      '4/7 anatheme choix',
+      '5/7 adepte choix',
+      '6/7 oracle presentation',
+      '7/7 maudit presentation',
+    ]);
+  });
+
+  it('ordre complet : réveils de la nuit, puis les rôles sans réveil', () => {
+    const etat = creerPartie(
+      planDeTest([
+        'pelerin', 'alpha', 'main-noire', 'sainte', 'augure', 'spectre', 'courtisane', 'oracle', 'bourreau', 'vipere',
+        'protecteur', 'devoue',
+      ]),
+    );
+    expect(parcourir(etat).map((e) => e.split(' ')[1])).toEqual([
+      'spectre', 'courtisane', 'protecteur', 'oracle', 'augure', 'sainte', 'vipere',
+      'pelerin', 'devoue', 'alpha', 'main-noire', 'bourreau',
     ]);
   });
 
@@ -50,13 +64,13 @@ describe("nuit d'explication", () => {
 
   it("sans carte Spectre, la reconnaissance se fait au passage de l'Originel", () => {
     const etat = creerPartie(planDeTest(['originel', 'oracle', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin']));
-    // Ordre du registre : Pèlerin, Oracle, puis l'Originel.
-    expect(parcourir(etat)).toEqual(['1/3 pelerin presentation', '2/3 oracle presentation', '3/3 originel reconnaissance']);
+    // L'Originel ouvre l'explication avec la reconnaissance de la meute.
+    expect(parcourir(etat)).toEqual(['1/3 originel reconnaissance', '2/3 oracle presentation', '3/3 pelerin presentation']);
   });
 
   it("l'Anathème et l'Adepte choisissent à leur passage, et c'est obligatoire", () => {
     let etat = creerPartie(PLAN);
-    for (let i = 0; i < 2; i++) etat = appliquer(etat, { type: 'passer' });
+    for (let i = 0; i < 3; i++) etat = appliquer(etat, { type: 'passer' }); // Spectres, Doubles, Trinité
     expect(etapeSuivante(etat)).toMatchObject({ role: 'anatheme', mode: 'choix' });
     expect(() => appliquer(etat, { type: 'passer' })).toThrow(/doit faire son choix/);
     expect(() => appliquer(etat, { type: 'anatheme-choisir-modele', cible: 4 })).toThrow();
@@ -104,7 +118,7 @@ describe("nuit d'explication", () => {
 
   it("si l'Alpha est une carte posée sur un siège, pas d'élection", () => {
     let etat = creerPartie(planDeTest(['alpha', 'spectre', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'pelerin', 'oracle']));
-    // Rôles en jeu : Spectre, Pèlerin, Oracle, Alpha.
+    // Rôles en jeu : Spectre, Oracle, Pèlerin, Alpha.
     for (let i = 0; i < 4; i++) etat = appliquer(etat, { type: 'passer' });
     expect(etat.phase).toEqual({ type: 'nuit', numero: 1, etape: 0 });
   });

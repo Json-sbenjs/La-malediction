@@ -215,8 +215,8 @@ describe('Doubles', () => {
 
   it("se reconnaissent pendant la nuit d'explication", () => {
     let etat = creerPartie(planDeTest(ROLES));
-    // Rôles en jeu dans l'ordre : Spectre, Pèlerin, Doubles.
-    etat = appliquer(appliquer(etat, { type: 'passer' }), { type: 'passer' });
+    // Ordre d'explication : Spectres, puis Doubles.
+    etat = appliquer(etat, { type: 'passer' });
     expect(etapeSuivante(etat)).toMatchObject({ role: 'doubles', mode: 'reconnaissance', acteurs: [1, 2] });
     etat = appliquer(etat, { type: 'passer' });
     expect(etat.infoMJ).toBe('Les Doubles : siège 1, siège 2');
