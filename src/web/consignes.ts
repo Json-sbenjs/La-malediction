@@ -19,6 +19,8 @@ export function consigneReveil(role: RoleId, contexte: ContexteConsigne): string
       return 'Les Doubles se réveillent et se reconnaissent.';
     case 'medium':
       return 'Le Médium se réveille et, en silence, pointe un mort puis un vivant. Le mort répond par un mime.';
+    case 'augure':
+      return "L'Augure a-t-elle été vue par les Spectres pendant qu'elle espionnait ? Si oui, elle mourra au matin, quoi qu'il arrive.";
     case 'inquisiteur':
       return "L'Inquisiteur se réveille et marque un joueur : il aura une voix contre lui au vote.";
     case 'enchanteur':
@@ -123,6 +125,12 @@ export function modeSaisie(role: RoleId, explication = false): ModeSaisie {
         type: 'oui-non',
         oui: { texte: 'Endormir les Spectres', action: { type: 'enchanteur-enchanter', utiliser: true } },
         non: { texte: 'Pas cette nuit', action: { type: 'enchanteur-enchanter', utiliser: false } },
+      };
+    case 'augure':
+      return {
+        type: 'oui-non',
+        oui: { texte: 'Elle a été vue', action: { type: 'augure-vue', vue: true } },
+        non: { texte: 'Pas vue', action: { type: 'augure-vue', vue: false } },
       };
     case 'originel':
       return {

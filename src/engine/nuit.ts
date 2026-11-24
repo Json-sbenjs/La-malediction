@@ -16,6 +16,7 @@ const ACTION_DU_ROLE: Partial<Record<RoleId, Action['type']>> = {
   sainte: 'sainte-sauver',
   vipere: 'vipere-empoisonner',
   inquisiteur: 'inquisiteur-marquer',
+  augure: 'augure-vue',
   enchanteur: 'enchanteur-enchanter',
   originel: 'originel-infecter',
   maudit: 'maudit-devorer',
@@ -42,7 +43,9 @@ export function ordreDeNuit(etat: EtatPartie, numero: number): RoleId[] {
 export function acteurs(etat: EtatPartie, role: RoleId, numero: number): JoueurId[] {
   // Conditions propres à certains rôles, avant de regarder les joueurs.
   const morts = etat.joueurs.some((j) => !j.vivant);
-  const endormi = etat.enchantement && (role === 'spectre' || role === 'originel' || role === 'maudit');
+  // Spectres endormis : ni eux, ni l'Originel, ni le Maudit, et l'Augure n'a rien à espionner.
+  const endormi =
+    etat.enchantement && (role === 'spectre' || role === 'originel' || role === 'maudit' || role === 'augure');
   if (endormi) return [];
   if (role === 'originel' && etat.victimeSpectres === null) return []; // rien à transformer
   if (role === 'maudit' && numero % 2 !== 0) return []; // une nuit sur deux : les nuits paires
@@ -115,6 +118,7 @@ function ciblesDuRole(etat: EtatPartie, role: RoleId, numero: number, quiAgit: J
       return saufActeurs.map((j) => j.id);
     case 'medium':
     case 'enchanteur':
+    case 'augure':
       return [];
     default:
       return enVie.map((j) => j.id);
@@ -160,6 +164,8 @@ export function debutDeNuit(etat: EtatPartie, numero: number): EtatPartie {
     infecte: null,
     victimeMaudit: null,
     marque: null,
+    augureVue: null,
+    voteDesMorts: null,
     infoMJ: null,
   };
 }
@@ -244,6 +250,12 @@ export function appliquerNuit(etat: EtatPartie, phase: PhaseNuit, action: Action
       viser(action.cible);
       suivant.marque = action.cible;
       suivant.infoMJ = `${nomJoueur(joueur(action.cible))} est marqué : une voix contre lui au vote`;
+      break;
+
+    case 'augure-vue':
+      if (!action.vue) break;
+      suivant.augureVue = acteur.id;
+      suivant.infoMJ = `${nomJoueur(acteur)} a été vue par les Spectres : elle mourra au matin`;
       break;
 
     case 'enchanteur-enchanter':

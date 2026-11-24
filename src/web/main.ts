@@ -495,6 +495,17 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
         </div>`;
     }
 
+    case 'morts-du-jour':
+      return `
+        <h2 class="titre-role">Les morts</h2>
+        <p class="consigne">Jour ${etape.numero} : aujourd'hui, les morts parlent ou votent ? Le choix vaut pour tous.</p>
+        <p class="qui">Morts : ${etape.morts.map(nom).join(', ')}</p>
+        <div class="boutons">
+          ${bouton('Les morts votent', 'data-morts="voter"', 'principal')}
+          ${bouton('Les morts parlent', 'data-morts="parler"')}
+        </div>
+        <p class="qui">S'ils votent : 1 voix chacun, et ils se taisent. S'ils parlent : ils ne votent pas.</p>`;
+
     case 'election-alpha':
       return `
         ${illustration('alpha', "L'Alpha")}
@@ -521,6 +532,13 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
           etat.marque !== null && etat.joueurs.some((j) => j.id === etat.marque && j.vivant)
             ? `<p>🪶 Marque de l'Inquisiteur : ${nom(etat.marque)} part avec une voix contre lui.</p>`
             : ''
+        }
+        ${
+          etat.voteDesMorts === 'voter'
+            ? "<p>🕯️ Aujourd'hui, les morts votent aussi (1 voix chacun) : touche-les comme les vivants.</p>"
+            : etat.voteDesMorts === 'parler'
+              ? "<p>🕯️ Aujourd'hui, les morts parlent mais ne votent pas.</p>"
+              : ''
         }
         ${
           etat.joueurs.some((j) => j.vivant && j.statuts.enrole)
@@ -768,6 +786,8 @@ app.addEventListener('click', (evt) => {
       (sansChoix ? "\nL'Anathème et l'Adepte qui n'ont pas encore choisi joueront sans modèle ni mentor." : '');
     if (!confirm(message)) return;
     return jouer({ type: 'passer-explication' });
+  } else if (d.morts !== undefined) {
+    return jouer({ type: 'morts-du-jour', choix: d.morts === 'voter' ? 'voter' : 'parler' });
   } else if (d.ouiNon !== undefined) {
     const etape = etapeSuivante(ui.etat!);
     if (etape.type === 'reveil') {

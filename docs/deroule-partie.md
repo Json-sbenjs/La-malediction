@@ -48,7 +48,7 @@ Un rôle sans joueur qui peut agir (mort, occupé, pouvoir perdu ou déjà utili
 | 50 | Spectres | pas endormis | désignent une victime |
 | 52 | Originel | sort pas utilisé, il y a une victime | transforme la victime en Spectre au lieu de la tuer |
 | 55 | Maudit | nuit paire, pas endormi | peut tuer un Spectre |
-| 57 | Augure | — | espionne les Spectres ; si elle est vue, elle meurt — **à coder** |
+| 57 | Augure | pas occupée, Spectres pas endormis | elle a espionné pendant le réveil des Spectres ; le MJ dit si elle a été vue : si oui, elle meurt au matin, en plus de la victime, et rien ne la sauve (ni protection ni Sainte) |
 | 60 | Sainte | sort pas utilisé, il y a une victime | sauve la victime des Spectres |
 | 70 | Vipère | sort pas utilisé | empoisonne un joueur |
 | 80 | Sectaire | — | enrôle un joueur non enrôlé ; le MJ lui montre le Sectaire |
@@ -62,6 +62,7 @@ Un enrôlé ne peut jamais viser le Sectaire avec son pouvoir.
 - La victime des Spectres meurt, sauf si elle est protégée ou sauvée par la Sainte.
 - Le Spectre visé par le Maudit meurt, sauf s'il est protégé.
 - L'empoisonné meurt (la protection ne bloque pas le poison).
+- L'Augure vue par les Spectres meurt (ni la protection ni la Sainte ne la sauvent).
 - La victime de l'Originel devient Spectre en secret, sauf si elle est protégée.
 - Puis : effets de mort (§ 5) et test de victoire.
 
@@ -78,13 +79,16 @@ Un enrôlé ne peut jamais viser le Sectaire avec son pouvoir.
 
 1. Annonce des morts (rôles révélés) et de la marque de l'Inquisiteur.
 2. S'il n'y a pas d'Alpha en vie : élection de l'Alpha.
-3. Discussion, puis **vote du village** : l'Alpha compte double, le joueur marqué part avec une voix, une égalité en tête n'élimine personne.
+3. **Les morts, les jours pairs** (2, 4, 6…), s'il y en a : le MJ choisit **pour tous** s'ils parlent ou s'ils votent ce jour-là.
+   - « voter » : chaque mort a 1 voix (contre un vivant), et ils se taisent ;
+   - « parler » : ils prennent part à la discussion, mais ne votent pas.
+   Les jours impairs, les morts se taisent et ne votent pas. Le choix vaut pour la journée (second vote du Bourreau compris).
+4. Discussion, puis **vote du village** : l'Alpha compte double, le joueur marqué part avec une voix, une égalité en tête n'élimine personne.
    Le MJ peut aussi faire un **vote rapide** (il désigne directement l'éliminé).
-   Les morts peuvent, **un jour sur deux**, soit parler soit voter — **à coder** (aujourd'hui seuls les vivants votent).
-4. **Sacrifié** : il peut mourir à la place du condamné (une fois).
-5. Effets de mort du condamné (§ 5), puis test de victoire.
-6. **Bourreau** : une fois dans la partie, il peut déclencher un second vote le même jour.
-7. Sinon, on passe à la nuit suivante.
+5. **Sacrifié** : il peut mourir à la place du condamné (une fois).
+6. Effets de mort du condamné (§ 5), puis test de victoire.
+7. **Bourreau** : une fois dans la partie, il peut déclencher un second vote le même jour.
+8. Sinon, on passe à la nuit suivante.
 
 ## 7. Victoire — `victoire.ts`
 
@@ -96,4 +100,4 @@ Un enrôlé ne peut jamais viser le Sectaire avec son pouvoir.
 ## Écarts encore ouverts
 
 - **FigJam à mettre à jour** (bloqué par la limite d'appels Figma du forfait Starter) : nuit d'explication rôle par rôle, ordre de la Nuit Type ci-dessus, Nécromancien confirmé (à placer après l'Envoûteur), bloc « si l'Oracle en vie » de l'Originel à renommer, Sainte qui « sauve la victime », bloc de l'Adepte (« mentor » et non « modèle »), Usurpateur avant les autres effets, successeur de l'Alpha, Sacrifié, Bourreau, vote rapide, dissolution Trinité / Doubles, Sectaire, test de victoire après la nuit, sections « architecture du code » et « planning » à jour.
-- **Code à faire** : réveil de l'Augure ; vote des morts un jour sur deux.
+- **FigJam, aussi** : la question « l'Augure a-t-elle été vue ? » (rang 57) et le choix des morts les jours pairs (le MJ décide pour tous : parler ou voter).

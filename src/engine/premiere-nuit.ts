@@ -29,18 +29,14 @@ const SANS_REVEIL: RoleId[] = ['pelerin', 'devoue', 'alpha', 'main-noire', 'usur
  * L'ordre d'explication des rôles, pour raconter la partie dans l'ordre où elle se joue :
  * 1. ce qui se passe pendant la nuit d'explication : la meute des Spectres se reconnaît,
  *    puis Doubles, Trinité, Anathème (modèle), Adepte (mentor) ;
- * 2. une nuit de jeu, dans l'ordre des réveils (l'Augure juste après la meute, qu'elle espionne) ;
+ * 2. une nuit de jeu, dans l'ordre des réveils ;
  * 3. les rôles sans réveil : le jour et les morts.
  */
 export function ordreDesRoles(etat: EtatPartie): RoleId[] {
   const presents = new Set(etat.joueurs.map((j) => j.role));
   const meute = FAMILLE_SPECTRES.find((r) => presents.has(r)) ?? 'spectre';
 
-  const nuit: RoleId[] = [];
-  for (const { id } of rolesDeLaNuit()) {
-    nuit.push(id);
-    if (id === 'maudit') nuit.push('augure');
-  }
+  const nuit: RoleId[] = rolesDeLaNuit().map((r) => r.id);
 
   const ordre = [meute, 'doubles', 'trinite', 'anatheme', 'adepte', ...nuit, ...SANS_REVEIL] as RoleId[];
   const resultat = [...new Set(ordre)].filter((r) => presents.has(r));
