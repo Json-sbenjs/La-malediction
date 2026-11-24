@@ -6,6 +6,7 @@ Le FigJam, ce document et le code (`src/engine/`) doivent dire la même chose.
 
 Déroulé : **mise en place → nuit d'explication → élection de l'Alpha (jour 0) → nuit 1 → jour 1 → nuit 2 → …**
 La victoire est vérifiée après chaque action du MJ qui peut tuer quelqu'un (fin de nuit, vote, effets de mort).
+À toute étape, le MJ peut **annuler sa dernière action** (bouton « Annuler », `historique.ts`) : la partie revient exactement à l'état d'avant, jusqu'à 100 actions en arrière.
 
 ## 1. Mise en place — `mise-en-place.ts`, `generateur.ts`
 
