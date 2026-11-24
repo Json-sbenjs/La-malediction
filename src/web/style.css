@@ -272,6 +272,8 @@ button:disabled { opacity: 0.4; cursor: default; }
 .siege.choisi { opacity: 1; background: var(--or); color: var(--sur-or); }
 .siege.choisi .role { color: var(--sur-or); }
 .siege.mort { opacity: 0.35; filter: grayscale(1); }
+/* Un mort qui peut voter (jour pair, « les morts votent ») reste lisible. */
+.siege.mort.actif { opacity: 0.8; cursor: pointer; }
 
 /* ── Panneau ─────────────────────────────────────── */
 .panneau {

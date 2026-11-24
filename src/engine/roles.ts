@@ -29,7 +29,7 @@ export interface RoleDef {
  * Les rangs de réveil sont une PROPOSITION : à vérifier avec la section
  * « Nuit Type » du diagramme de flux dans le FigJam.
  * Ordre d'une nuit : Courtisane 10, Protecteur 20, Oracle 30, Médium 33, Inquisiteur 36,
- * Instinct 40, Enchanteur 45, Spectres 50, Originel 52, Maudit 55, Sainte 60, Vipère 70,
+ * Instinct 40, Enchanteur 45, Spectres 50, Originel 52, Maudit 55, Augure 57, Sainte 60, Vipère 70,
  * Sectaire 80, Envoûteur 85, Nécromancien 90.
  * Nuit d'explication (avant la partie) : Spectres (reconnaissance), Doubles 10, Trinité 12,
  * Anathème 20, Adepte 30.
@@ -197,9 +197,11 @@ export const ROLES: Record<RoleId, RoleDef> = {
     camp: 'pelerins',
     campVariable: false,
     cartes: 1,
-    reveil: { type: 'jamais' },
+    // Elle espionne pendant le réveil des Spectres ; à son rang, le MJ dit seulement si elle a été vue.
+    reveil: { type: 'chaque-nuit', rang: 57 },
     usageUnique: false,
-    description: "Peut espionner les Spectres pendant la nuit, mais risque d'être repéré et tué.",
+    description:
+      "Espionne les Spectres pendant leur réveil. Si elle est vue, elle meurt au matin, et rien ne peut la sauver.",
   },
   inquisiteur: {
     id: 'inquisiteur',

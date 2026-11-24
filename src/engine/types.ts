@@ -142,6 +142,13 @@ export interface EtatPartie {
   victimeMaudit: JoueurId | null;
   /** Joueur marqué par l'Inquisiteur : une voix contre lui au vote du lendemain. */
   marque: JoueurId | null;
+  /** L'Augure vue par les Spectres cette nuit : elle meurt au matin, rien ne la sauve. */
+  augureVue: JoueurId | null;
+  /**
+   * Jours pairs : ce que le MJ a décidé pour les morts ce jour-là
+   * (« parler » : ils parlent sans voter ; « voter » : 1 voix chacun, et ils se taisent). null sinon.
+   */
+  voteDesMorts: 'parler' | 'voter' | null;
   /** Choix en attente suite à des morts (prioritaires sur tout le reste). */
   decisions: Decision[];
   /** Info à transmettre en secret par le MJ (résultat de l'Oracle, de l'Instinct…). */
@@ -179,6 +186,8 @@ export type Etape =
   /** Un choix lié à une mort ou au vote (Usurpateur, Main Noire, Alpha, Sacrifié, Bourreau). */
   | { type: 'decision'; decision: Decision; ciblesPossibles: JoueurId[] }
   | { type: 'election-alpha'; numero: number; candidats: JoueurId[] }
+  /** Jours pairs, s'il y a des morts : avant le vote, ils parlent ou ils votent ? */
+  | { type: 'morts-du-jour'; numero: number; morts: JoueurId[] }
   | { type: 'vote'; numero: number; votants: JoueurId[]; ciblesPossibles: JoueurId[]; alpha: JoueurId }
   | { type: 'fin'; gagnants: Camp | null };
 
@@ -197,6 +206,8 @@ export type Action =
   | { type: 'sainte-sauver'; utiliser: boolean }
   | { type: 'vipere-empoisonner'; cible: JoueurId | null }
   | { type: 'inquisiteur-marquer'; cible: JoueurId }
+  /** Le MJ dit si l'Augure a été vue par les Spectres pendant qu'elle espionnait. */
+  | { type: 'augure-vue'; vue: boolean }
   | { type: 'enchanteur-enchanter'; utiliser: boolean }
   | { type: 'originel-infecter'; utiliser: boolean }
   | { type: 'maudit-devorer'; cible: JoueurId | null }
@@ -210,6 +221,8 @@ export type Action =
   | { type: 'adepte-choisir-mentor'; cible: JoueurId }
   // Jour
   | { type: 'elire-alpha'; cible: JoueurId }
+  /** Jours pairs : le MJ décide pour tous les morts s'ils parlent ou s'ils votent. */
+  | { type: 'morts-du-jour'; choix: 'parler' | 'voter' }
   | { type: 'vote'; votes: Record<JoueurId, JoueurId | null> }
   /** Vote rapide : le MJ désigne directement le joueur éliminé, sans saisir chaque voix. */
   | { type: 'eliminer'; cible: JoueurId }

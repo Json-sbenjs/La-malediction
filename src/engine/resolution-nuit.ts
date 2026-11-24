@@ -1,4 +1,4 @@
-// Résolution de la nuit : attaque des Spectres, protection, Sainte, Vipère, Maudit, Originel.
+// Résolution de la nuit : attaque des Spectres, protection, Sainte, Vipère, Maudit, Augure vue, Originel.
 import { tuer } from './mort';
 import { nomJoueur, trouverJoueur } from './outils';
 import type { EtatPartie, JoueurId } from './types';
@@ -19,6 +19,10 @@ export function mortsDeLaNuit(etat: EtatPartie): JoueurId[] {
     const j = trouverJoueur(etat, proie);
     if (j.vivant && !j.statuts.protege) morts.push(proie);
   }
+
+  // L'Augure vue par les Spectres meurt, quoi qu'il arrive (ni protection ni Sainte).
+  const augure = etat.augureVue;
+  if (augure !== null && !morts.includes(augure) && trouverJoueur(etat, augure).vivant) morts.push(augure);
 
   // La protection ne bloque pas le poison.
   const poison = etat.empoisonne;
