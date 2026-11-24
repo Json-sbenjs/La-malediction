@@ -14,7 +14,7 @@ export { PLANS, validerPlan } from './plans';
 export { ROLES, getRole } from './roles';
 export { choisirPlan, nombresDeJoueurs, sallesDisponibles } from './mise-en-place';
 export { nomJoueur } from './outils';
-export { compterVotes, type ResultatVote } from './vote';
+export { compterVotes, mortsVotent, type ResultatVote } from './vote';
 
 /** Crée une partie à partir d'un plan (prénoms facultatifs, dans l'ordre des sièges). */
 export function creerPartie(plan: Plan, prenoms?: (string | null)[]): EtatPartie {

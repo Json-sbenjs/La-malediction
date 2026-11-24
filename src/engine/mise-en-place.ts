@@ -71,7 +71,6 @@ export function creerPartie(plan: Plan, prenoms: (string | null)[] = []): EtatPa
     victimeMaudit: null,
     marque: null,
     augureVue: null,
-    voteDesMorts: null,
     decisions: [],
     infoMJ: devoue ? `Annonce à tous : ${nomJoueur(devoue)} est le Dévoué` : null,
   };

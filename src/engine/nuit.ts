@@ -165,7 +165,6 @@ export function debutDeNuit(etat: EtatPartie, numero: number): EtatPartie {
     victimeMaudit: null,
     marque: null,
     augureVue: null,
-    voteDesMorts: null,
     infoMJ: null,
   };
 }

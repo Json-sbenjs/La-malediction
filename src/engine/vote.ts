@@ -1,5 +1,5 @@
-// Le jour : élection de l'Alpha si besoin, choix des morts (jours pairs), puis vote du village
-// (Alpha ×2, marque de l'Inquisiteur, morts qui votent, Sacrifié, second vote du Bourreau).
+// Le jour : élection de l'Alpha si besoin, puis vote du village
+// (Alpha ×2, marque de l'Inquisiteur, morts qui votent les jours pairs, Sacrifié, second vote du Bourreau).
 import { sauterBourreauMort, tuer } from './mort';
 import { debutDeNuit } from './nuit';
 import { nomJoueur, trouverJoueur, verifierCible, vivants } from './outils';
@@ -16,15 +16,19 @@ function morts(etat: EtatPartie): JoueurId[] {
   return etat.joueurs.filter((j) => !j.vivant).map((j) => j.id);
 }
 
-/** Jours pairs (2, 4, 6…), les morts peuvent participer : le MJ choisit pour tous s'ils parlent ou votent. */
-export function jourDesMorts(numero: number): boolean {
+/**
+ * Les morts votent les jours pairs (2, 4, 6…), 1 voix chacun, contre un vivant.
+ * Les jours impairs (1, 3, 5…), ils parlent mais ne votent pas.
+ */
+export function mortsVotent(numero: number): boolean {
   return numero > 0 && numero % 2 === 0;
 }
 
-/** Qui vote aujourd'hui : les vivants, plus les morts un jour pair où le MJ les a fait voter. */
+/** Qui vote aujourd'hui : les vivants, plus les morts un jour pair. */
 export function votantsDuJour(etat: EtatPartie): JoueurId[] {
   const ids = vivants(etat).map((j) => j.id);
-  return etat.voteDesMorts === 'voter' ? [...ids, ...morts(etat)] : ids;
+  const jourPair = etat.phase.type === 'jour' && mortsVotent(etat.phase.numero);
+  return jourPair ? [...ids, ...morts(etat)] : ids;
 }
 
 export function etapeJour(etat: EtatPartie, phase: PhaseJour): Etape {
@@ -32,9 +36,6 @@ export function etapeJour(etat: EtatPartie, phase: PhaseJour): Etape {
   const alpha = alphaVivant(etat);
   if (alpha === null) {
     return { type: 'election-alpha', numero: phase.numero, candidats: ids };
-  }
-  if (jourDesMorts(phase.numero) && etat.voteDesMorts === null && morts(etat).length > 0) {
-    return { type: 'morts-du-jour', numero: phase.numero, morts: morts(etat) };
   }
   // On ne vote que contre un vivant, même quand les morts votent.
   return { type: 'vote', numero: phase.numero, votants: votantsDuJour(etat), ciblesPossibles: ids, alpha };
@@ -50,7 +51,7 @@ export interface ResultatVote {
 /**
  * Compte les voix : `votes[votant] = cible` (null = abstention).
  * La voix de l'Alpha compte double. Le joueur marqué par l'Inquisiteur part avec une voix.
- * Un jour pair où le MJ les fait voter, les morts votent aussi (1 voix chacun).
+ * Les jours pairs, les morts votent aussi (1 voix chacun).
  * Égalité en tête → personne n'est éliminé.
  */
 export function compterVotes(etat: EtatPartie, votes: Record<JoueurId, JoueurId | null>): ResultatVote {
@@ -89,18 +90,6 @@ export function appliquerJour(etat: EtatPartie, phase: PhaseJour, action: Action
     // Jour 0 : l'élection faite, la partie commence par la première nuit.
     if (phase.numero === 0) return { ...debutDeNuit({ ...etat, alpha: action.cible }, 1), infoMJ: info };
     return { ...etat, alpha: action.cible, infoMJ: info };
-  }
-
-  if (etape.type === 'morts-du-jour') {
-    if (action.type !== 'morts-du-jour') throw new Error("Choisis d'abord si les morts parlent ou votent");
-    return {
-      ...etat,
-      voteDesMorts: action.choix,
-      infoMJ:
-        action.choix === 'voter'
-          ? 'Aujourd\'hui, les morts votent (1 voix chacun) et se taisent'
-          : 'Aujourd\'hui, les morts peuvent parler, mais ne votent pas',
-    };
   }
 
   let elimine: JoueurId | null;
