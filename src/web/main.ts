@@ -27,6 +27,7 @@ import {
 import { consigneReveil, modeSaisie } from './consignes';
 import { clicGenerateur, ecranGenerateur, nouveauGenerateur, type EtatGenerateur } from './generateur';
 import { densite } from './densite';
+import { SI_PAS_D_IMAGE } from './images';
 import { PLANS_DEMO } from './plans-demo';
 import '@fontsource/eb-garamond/400.css';
 import '@fontsource/eb-garamond/500.css';
@@ -179,7 +180,7 @@ function image(role: string): string {
 }
 
 function illustration(role: string, alt: string): string {
-  return `<img class="illustration" src="${image(role)}" alt="${echapper(alt)}">`;
+  return `<img class="illustration" src="${image(role)}" alt="${echapper(alt)}" ${SI_PAS_D_IMAGE}>`;
 }
 
 /** Camp de départ d'un rôle, pour l'écran de présentation. */
@@ -335,7 +336,7 @@ function siege(j: Joueur, etape: Etape, actifs: JoueurId[], compte: Record<Joueu
   return `
     <button type="button" class="${classes}" data-siege="${j.id}" style="--x:${pos.x};--y:${pos.y}"
       ${actifs.includes(j.id) || etape.type === 'vote' ? '' : 'tabindex="-1"'}>
-      <img class="vignette" src="${image(j.role)}" alt="">
+      <img class="vignette" src="${image(j.role)}" alt="" ${SI_PAS_D_IMAGE}>
       <span class="num">${j.id}</span>
       <span class="nom">${echapper(j.nom ?? '')}</span>
       <span class="role">${echapper(ROLES[j.role].nom)}</span>
@@ -546,7 +547,7 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
             ? ''
             : `<div class="raccourci">
                  <p>Vote rapide : pas besoin de saisir les voix.</p>
-                 ${bouton(`Éliminer directement ${nom(ui.votant)}`, `data-eliminer="${ui.votant}"`, 'sang')}
+                 ${bouton(`Éliminer directement ${nom(ui.votant)}`, `data-eliminer="${ui.votant}"`)}
                </div>`
         }
         <div class="boutons">
@@ -559,7 +560,7 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
       return `
         ${
           etape.gagnants === null
-            ? `<img class="illustration" src="${import.meta.env.BASE_URL}blason.webp" alt="">`
+            ? `<img class="blason-fin" src="${import.meta.env.BASE_URL}blason.webp" alt="">`
             : illustration(IMAGE_CAMP[etape.gagnants], VICTOIRE[etape.gagnants])
         }
         <h2 class="titre-role">Fin de la partie</h2>
@@ -577,7 +578,7 @@ function ecranRevelation(id: JoueurId): string {
   return `
     <main class="revelation" aria-label="Rôle à montrer à l'Oracle">
       <p class="revelation-qui">${nom(id)}</p>
-      <img class="revelation-carte" src="${image(joueur.role)}" alt="">
+      <img class="revelation-carte" src="${image(joueur.role)}" alt="" ${SI_PAS_D_IMAGE}>
       <h1 class="revelation-role">${echapper(role.nom)}</h1>
       ${bouton('Continuer', 'data-fin-revelation', 'discret')}
     </main>`;
