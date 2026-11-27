@@ -155,6 +155,27 @@ button:disabled { opacity: 0.4; cursor: default; }
 .prenom input:focus-visible, .champ:focus-visible { outline: 3px solid var(--or-vif); outline-offset: 1px; }
 .choix > .principal, .carte > button, .generateur > button { align-self: flex-start; }
 
+/* ── Réglages du son ─────────────────────────────── */
+.volume { display: grid; grid-template-columns: minmax(9em, auto) 1fr; align-items: center; gap: var(--espace-3); min-height: 48px; }
+.volume span { color: var(--encre-douce); }
+.volume input { width: 100%; height: 48px; margin: 0; accent-color: var(--or); }
+.bouton-fichier {
+  display: inline-flex;
+  align-items: center;
+  font: 600 19px/1.2 var(--font-texte);
+  color: var(--encre);
+  background: var(--surface-haute);
+  border: 1px solid var(--filet);
+  border-radius: var(--arrondi-bouton);
+  padding: 0 var(--espace-6);
+  min-height: 48px;
+  cursor: pointer;
+}
+.bouton-fichier:focus-within { outline: 3px solid var(--or-vif); outline-offset: 2px; }
+@media (max-width: 480px) {
+  .volume { grid-template-columns: 1fr; gap: 0; }
+}
+
 /* ── Partie ──────────────────────────────────────── */
 .barre {
   display: flex;

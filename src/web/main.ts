@@ -39,6 +39,19 @@ import { densite } from './densite';
 import { SI_PAS_D_IMAGE } from './images';
 import { arreterScan, demarrerScan, ecranPartage, ecranScanner, lienDePartage } from './partage';
 import { PLANS_DEMO } from './plans-demo';
+import {
+  basculerMuet,
+  choisirMusiquePerso,
+  debloquerAudio,
+  definirAmbiance,
+  jouerEffet,
+  jouerLot,
+  lesReglages,
+  nombreDeSonsDemandes,
+  reglerVolume,
+  remettreMusiqueOrigine,
+} from './sons';
+import { ambianceDe, sonDeLEtape, sonsDebutPartie, sonsDuChangement } from './sons-evenements';
 import '@fontsource/eb-garamond/400.css';
 import '@fontsource/eb-garamond/500.css';
 import '@fontsource/eb-garamond/600.css';
@@ -94,9 +107,11 @@ function importerSalle(texte: string): boolean {
     ajouterPlanPerso(plan);
     ui.info = `Salle « ${plan.salle} » à ${plan.nbJoueurs} joueurs ${remplace ? 'mise à jour' : 'ajoutée'}.`;
     ui.erreur = null;
+    jouerEffet('ui_succes');
     return true;
   } catch (e) {
     ui.erreur = e instanceof Error ? e.message : String(e);
+    jouerEffet('ui_erreur');
     return false;
   }
 }
@@ -193,6 +208,7 @@ function annulerDerniereAction(): void {
   ui.revelation = null;
   viderSaisie();
   sauvegarder();
+  jouerEffet('ui_annuler');
   afficher();
 }
 
@@ -206,8 +222,13 @@ function jouer(action: Action): void {
     sauvegarder();
     // L'Oracle a désigné quelqu'un : on montre son rôle en grand pour le lui faire voir.
     if (action.type === 'oracle-voir') ui.revelation = action.cible;
+    // Sons : transition, morts, réveil du rôle suivant… ou au moins « validé ».
+    const lot = sonsDuChangement(avant, action, ui.etat);
+    if (lot.length > 0) jouerLot(lot);
+    else jouerEffet('ui_valider');
   } catch (e) {
     ui.erreur = e instanceof Error ? e.message : String(e);
+    jouerEffet('ui_erreur');
   }
   afficher();
 }
@@ -350,7 +371,35 @@ function ecranChoix(): string {
       ${ui.nbJoueurs > 0 ? `<section class="carte"><h2>Prénoms</h2><div class="prenoms">${champsPrenoms}</div></section>` : ''}
       ${ui.erreur ? `<p class="erreur">${echapper(ui.erreur)}</p>` : ''}
       ${bouton('Commencer la partie', 'data-commencer', 'principal')}
+      ${carteSons()}
     </main>`;
+}
+
+/** Réglages du son : trois volumes et la musique de fond du MJ. */
+function carteSons(): string {
+  const r = lesReglages();
+  const curseur = (canal: 'musique' | 'ambiance' | 'effets', titre: string) => `
+    <label class="volume">
+      <span>${titre}</span>
+      <input type="range" min="0" max="100" step="5" value="${r[canal]}" data-volume="${canal}" aria-label="Volume : ${titre}">
+    </label>`;
+  return `
+    <section class="carte sons">
+      <h2>Sons</h2>
+      ${curseur('musique', 'Musique')}
+      ${curseur('ambiance', 'Ambiance nuit / jour')}
+      ${curseur('effets', 'Effets et réveils')}
+      <h2>Musique de fond</h2>
+      <p class="note">${
+        r.musiquePerso
+          ? `Ta musique : <strong>${echapper(r.musiquePerso)}</strong>`
+          : "Musique d'origine de l'appli. Tu peux la remplacer par un fichier de la tablette (MP3, M4A…) : il reste sur cet appareil."
+      }</p>
+      <div class="choix-ligne">
+        <label class="bouton-fichier">🎵 Choisir ma musique<input type="file" accept="audio/*" data-musique-fichier hidden></label>
+        ${r.musiquePerso ? bouton("Musique d'origine", 'data-musique-origine', 'discret') : ''}
+      </div>
+    </section>`;
 }
 
 // ─── Écran 2 : la partie ──────────────────────────────────────────────
@@ -650,6 +699,7 @@ function ecranPartie(): string {
     <header class="barre">
       <span class="phase">${titrePhase(etat)}</span>
       <span class="actions-barre">
+        ${bouton(lesReglages().muet ? '🔇' : '🔊', `data-muet aria-label="${lesReglages().muet ? 'Remettre le son' : 'Couper le son'}"`, 'discret')}
         ${bouton('↶ Annuler', `data-annuler ${ui.historique.length === 0 ? 'disabled' : ''}`, 'discret')}
         ${etat.phase.type === 'explication' ? bouton("Passer l'explication", 'data-passer-explication', 'discret') : ''}
         ${bouton('Quitter', 'data-quitter', 'discret')}
@@ -689,6 +739,8 @@ function afficher(): void {
         ? ecranPartie()
         : ecranChoix();
 
+  definirAmbiance(ui.generateur || ui.partage || ui.scanner ? null : ambianceDe(ui.etat));
+
   // Bascule nuit / jour : fondu de 600 ms (le fond de page change en douceur via le CSS).
   const theme = themeVoulu();
   const racine = document.documentElement;
@@ -726,21 +778,34 @@ function toucherSiege(id: JoueurId): void {
   if (etape.type === 'vote') {
     if (ui.votant === null) {
       if (!etape.votants.includes(id)) return;
-      if (ui.votes[id] !== undefined) delete ui.votes[id]; // re-toucher un votant annule son vote
-      else ui.votant = id;
+      if (ui.votes[id] !== undefined) {
+        delete ui.votes[id]; // re-toucher un votant annule son vote
+        jouerEffet('ui_deselection');
+      } else {
+        ui.votant = id;
+        jouerEffet('ui_selection');
+      }
     } else if (id === ui.votant) {
       ui.votant = null;
+      jouerEffet('ui_deselection');
     } else if (etape.ciblesPossibles.includes(id)) {
       ui.votes[ui.votant] = id;
       ui.votant = null;
+      jouerEffet('ui_voix');
     }
     return;
   }
   if (!siegesActifs(etape).includes(id)) return;
   const max = nombreACocher(etape);
-  if (ui.selection.includes(id)) ui.selection = ui.selection.filter((x) => x !== id);
-  else if (max === 1) ui.selection = [id];
-  else if (ui.selection.length < max) ui.selection = [...ui.selection, id];
+  if (ui.selection.includes(id)) {
+    ui.selection = ui.selection.filter((x) => x !== id);
+    jouerEffet('ui_deselection');
+  } else if (max === 1 || ui.selection.length < max) {
+    ui.selection = max === 1 ? [id] : [...ui.selection, id];
+    jouerEffet('ui_selection');
+  } else {
+    jouerEffet('ui_erreur'); // déjà assez de joueurs choisis
+  }
 }
 
 function valider(): void {
@@ -767,16 +832,35 @@ function valider(): void {
 }
 
 app.addEventListener('click', (evt) => {
+  debloquerAudio(); // le premier geste du MJ autorise le son (musique, ambiance)
   if (clicApresDeplacement()) return; // fin d'un glisser de siège, pas un clic
   const el = (evt.target as HTMLElement).closest<HTMLElement>('button');
   if (!el || el.hasAttribute('disabled')) return;
+  // Chaque bouton fait un son : le sien s'il en a un, sinon le clic.
+  const sonsAvant = nombreDeSonsDemandes();
+  traiterClic(el);
+  if (nombreDeSonsDemandes() === sonsAvant) jouerEffet('ui_clic');
+});
+
+function traiterClic(el: HTMLElement): void {
   const d = el.dataset;
 
   if (d.annuler !== undefined) return annulerDerniereAction();
+  if (d.muet !== undefined) {
+    basculerMuet();
+    return afficher();
+  }
+  if (d.musiqueOrigine !== undefined) {
+    void remettreMusiqueOrigine().then(afficher);
+    return;
+  }
 
   // Révélation à l'Oracle : seul le bouton Continuer la ferme.
   if (d.finRevelation !== undefined) {
     ui.revelation = null;
+    // Le rôle suivant se réveille maintenant que l'Oracle a vu la carte.
+    const suivant = ui.etat ? sonDeLEtape(etapeSuivante(ui.etat)) : null;
+    if (suivant) jouerLot([{ son: suivant, delai: 0 }]);
     return afficher();
   }
 
@@ -795,8 +879,14 @@ app.addEventListener('click', (evt) => {
     const lien = lienDePartage(ui.partage);
     navigator.clipboard
       ?.writeText(lien)
-      .then(() => (ui.info = 'Lien copié : envoie-le à la tablette (message, mail…).'))
-      .catch(() => (ui.info = `Copie impossible. Le lien : ${lien}`))
+      .then(() => {
+        ui.info = 'Lien copié : envoie-le à la tablette (message, mail…).';
+        jouerEffet('ui_succes');
+      })
+      .catch(() => {
+        ui.info = `Copie impossible. Le lien : ${lien}`;
+        jouerEffet('ui_erreur');
+      })
       .finally(afficher);
     return;
   }
@@ -820,8 +910,12 @@ app.addEventListener('click', (evt) => {
 
   // Générateur de salle
   if (ui.generateur) {
+    if (d.genTirer !== undefined) jouerEffet('ui_tirage');
     const resultat = clicGenerateur(ui.generateur, d);
-    if (resultat?.type === 'enregistrer') ajouterPlanPerso(resultat.plan);
+    if (resultat?.type === 'enregistrer') {
+      ajouterPlanPerso(resultat.plan);
+      jouerEffet('ui_succes');
+    }
     if (resultat) ui.generateur = null;
     return afficher();
   }
@@ -839,8 +933,10 @@ app.addEventListener('click', (evt) => {
   } else if (d.salle !== undefined) {
     ui.salle = d.salle;
     ui.nbJoueurs = nombresDeJoueurs(ui.salle, tousLesPlans())[0] ?? 0;
+    jouerEffet('ui_selection');
   } else if (d.nb !== undefined) {
     ui.nbJoueurs = Number(d.nb);
+    jouerEffet('ui_selection');
   } else if (d.commencer !== undefined) {
     try {
       const plan = choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans());
@@ -850,9 +946,11 @@ app.addEventListener('click', (evt) => {
       ui.historique = [];
       viderSaisie();
       sauvegarder();
+      jouerLot(sonsDebutPartie(ui.etat));
       void garderEcranAllume();
     } catch (e) {
       ui.erreur = e instanceof Error ? e.message : String(e);
+      jouerEffet('ui_erreur');
     }
   }
   // Partie
@@ -910,11 +1008,14 @@ app.addEventListener('click', (evt) => {
     sauvegarder();
   }
   afficher();
-});
+}
 
 // Générateur : appui long sur un siège puis glisser pour le placer.
 activerDeplacement(app, (numero, position) => {
-  if (ui.generateur && position) deplacerDansGenerateur(ui.generateur, numero, position);
+  if (ui.generateur && position) {
+    deplacerDansGenerateur(ui.generateur, numero, position);
+    jouerEffet('ui_glisser');
+  }
   afficher();
 });
 
@@ -922,6 +1023,28 @@ app.addEventListener('input', (evt) => {
   const el = evt.target as HTMLInputElement;
   if (el.dataset.prenom !== undefined) ui.prenoms[Number(el.dataset.prenom)] = el.value;
   if (el.dataset.genSalle !== undefined && ui.generateur) ui.generateur.salle = el.value;
+  // Volumes : réglés en direct pendant qu'on glisse le curseur (sans redessiner l'écran).
+  const canal = el.dataset.volume;
+  if (canal === 'musique' || canal === 'ambiance' || canal === 'effets') {
+    debloquerAudio();
+    reglerVolume(canal, Number(el.value));
+  }
+});
+
+app.addEventListener('change', (evt) => {
+  const el = evt.target as HTMLInputElement;
+  // Curseur des effets relâché : un son pour entendre le nouveau volume.
+  if (el.dataset.volume === 'effets') jouerEffet('ui_valider');
+  if (el.dataset.musiqueFichier !== undefined && el.files?.[0]) {
+    debloquerAudio();
+    choisirMusiquePerso(el.files[0])
+      .then(() => jouerEffet('ui_succes'))
+      .catch(() => {
+        ui.erreur = "Impossible de garder cette musique sur l'appareil (stockage plein ou refusé).";
+        jouerEffet('ui_erreur');
+      })
+      .finally(afficher);
+  }
 });
 
 // ─── Tablette : écran allumé, appli installable et hors ligne ─────────

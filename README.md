@@ -23,6 +23,7 @@ npm test
 | `npm run dev` | lance l'interface web en local (Vite) |
 | `npm run build` | vérifie les types (`tsc`) puis construit l'appli dans `dist/` |
 | `npm run preview` | sert la version construite |
+| `npm run sons` | régénère les sons de `public/sons/` (il faut ffmpeg, voir `docs/sons.md`) |
 
 ### Sur l'iPad
 
@@ -57,6 +58,10 @@ src/
     ├── consignes.ts textes du MJ et saisie de chaque rôle
     ├── generateur.ts  écran « salle sur mesure »
     ├── plans-demo.ts  plans de démonstration (en attendant les vrais)
+    ├── sons-catalogue.ts  liste des sons (fichier, canal, description)
+    ├── sons-evenements.ts quel son pour quel moment de la partie
+    ├── sons.ts      lecteur Web Audio : musique, ambiances, effets, volumes
+    ├── musique-perso.ts   musique de fond choisie par le MJ (gardée sur la tablette)
     └── style.css
 tests/
 └── engine/          tests Vitest du moteur, un fichier par module
@@ -69,7 +74,9 @@ tests/
     ├── plans-demo.test.ts, generateur.test.ts
     ├── partie-complete.test.ts   ★ jalon : une partie du début à la victoire
     └── purete.test.ts   vérifie que le moteur reste pur
-public/              manifeste, service worker (hors ligne), icônes
+└── web/             tests de l'interface sans navigateur (sons)
+scripts/sons/        générateur des sons (synthèse en TypeScript → MP3)
+public/              manifeste, service worker (hors ligne), icônes, sons
 asset/               planche des cartes (PDF)
 ```
 
@@ -109,6 +116,13 @@ Deadline : le 27/12. On code d'abord les rôles qui sont sur les plans de salle.
 | S5 (21/12) | écrans tablette (installable, hors ligne) ✅, générateur de salle sur mesure ✅. Jalon : partie réelle sur iPad (à jouer) |
 
 Après la deadline : terminal de test. (Historique et annulation, les autres rôles : faits.)
+
+## Sons
+
+Musique de fond, ambiances nuit / jour, un son de réveil par rôle, un son par événement (morts, vote, Alpha, fin)
+et un retour sonore sur chaque bouton. Tout est synthétisé par `scripts/sons/` : aucune licence à gérer.
+Le MJ peut remplacer la musique de fond par son propre fichier (écran d'accueil → *Sons*) ; ce fichier reste sur la tablette.
+Détails, feuille de sons et marche à suivre pour changer un son : `docs/sons.md`.
 
 ## Rôles
 
