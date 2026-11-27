@@ -14,7 +14,9 @@ et un retour sonore sur chaque bouton. Ils ne changent aucune règle du jeu, seu
 - **La musique de fond est remplaçable par le MJ** : écran d'accueil → *Sons* → *Choisir ma musique*. Le fichier
   (par exemple « Intro » de John Carpenter, Cody Carpenter et Daniel Davies, acheté par le MJ) reste **sur la tablette**
   (IndexedDB). Il n'est jamais mis dans le dépôt ni sur le site publié : c'est une œuvre protégée par le droit d'auteur.
-  Sans fichier choisi, l'appli joue « Retro Synths » de HoliznaCC0 (CC0), dans l'esprit synthés années 80.
+  Sans fichier choisi, le MJ a le choix entre trois musiques sombres, toutes en mineur (carte *Sons*) : « Night Vigil »
+  (par défaut) et « Burt's Requiem » de freepd.com (domaine public), « WitchCraft » de HoliznaCC0 (CC0). La liste est
+  `MORCEAUX` dans `src/web/sons-catalogue.ts`.
 - **Même volume pour tous** : chaque son est réglé à un volume perçu commun (norme EBU R128, mesurée par ffmpeg) :
   environ −19 LUFS pour les effets et réveils, −18 pour la musique, −20 pour les ambiances ; l'interface est plus discrète.
 - **Feedback** : un son qui monte = positif (valider, choisir), un son qui descend = négatif (erreur, retirer).
@@ -33,7 +35,9 @@ Tous les fichiers sont des MP3 dans `public/sons/`, montés par `npm run sons`.
 
 | Moment | Ce qu'on entend | Base(s) | Fichier |
 |---|---|---|---|
-| Toute la session (dès le premier toucher) | Retro Synths (HoliznaCC0) : synthés rétro années 80, boucle de 96 s calée sur le motif. Remplaçable par le fichier du MJ. | Retro Synths (HoliznaCC0, CC0 1.0) | `sons/musique/musique_fond.mp3` |
+| Toute la session, au choix du MJ (par défaut) | « Night Vigil » (freepd.com) : orchestre sombre en la mineur, boucle de 96 s. | Night Vigil (freepd.com, domaine public) | `sons/musique/musique_veillee.mp3` |
+| Toute la session, au choix du MJ | « Burt's Requiem » (freepd.com) : requiem lent et grave en sol mineur, boucle de 96 s. | Burt's Requiem (freepd.com, domaine public) | `sons/musique/musique_requiem.mp3` |
+| Toute la session, au choix du MJ | « WitchCraft » (HoliznaCC0) : ambiance de sorcellerie en do mineur, boucle de 96 s. | WitchCraft (HoliznaCC0, CC0 1.0) | `sons/musique/musique_sorcellerie.mp3` |
 | Nuit d'explication et nuits | Nuit : forêt de nuit (insectes, bruissements) et drone inquiétant en dessous. | AMBForst_Night_LOOP_01 (Oculus VR, LLC, CC BY 4.0) + DSGNDron_DroneCreepy_OS_02 (Oculus VR, LLC, CC BY 4.0) | `sons/ambiance/amb_nuit.mp3` |
 | Jours (élection, vote) | Jour : vent léger dans les arbres, oiseaux. | WINDVege_LightWindTreesBirds_LOOP_01 (Oculus VR, LLC, CC BY 4.0) | `sons/ambiance/amb_jour.mp3` |
 | Tout bouton sans son propre | Clic de bois : tout bouton sans son propre. | UIClick_WoodConfirm_OS_01 (Oculus VR, LLC, CC BY 4.0) | `sons/ui/ui_clic.mp3` |
@@ -115,7 +119,7 @@ Un nouveau lot coupe le précédent en douceur : si le MJ passe vite les étapes
 
 | Fichier | Rôle |
 |---|---|
-| `src/web/sons-catalogue.ts` | liste des sons : identifiant, fichier, canal (musique / ambiance / effet), durée de boucle, description |
+| `src/web/sons-catalogue.ts` | liste des sons : identifiant, fichier, canal (musique / ambiance / effet), durée de boucle, description ; `MORCEAUX` = musiques au choix |
 | `src/web/sons-evenements.ts` | quel son pour quel changement de la partie (sans DOM, testé) |
 | `src/web/sons.ts` | lecteur Web Audio : volumes, boucles sans couture, lots d'effets, musique du MJ |
 | `src/web/musique-perso.ts` | garde la musique choisie par le MJ dans le navigateur |

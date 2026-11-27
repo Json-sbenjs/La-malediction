@@ -44,8 +44,10 @@ const arpege = (notes: IdSource[], ecart: number, duree: number, gain = 1): Couc
 
 export const MONTAGES: Record<IdSon, Montage> = {
   // ── Musique et ambiances (en boucle) ──
-  // Retro Synths a un motif de 8 s, régulier de 16 s à 196 s : boucle de 96 s calée sur ce motif.
-  musique_fond: { couches: [c('retroSynths', { depuis: 16, duree: 100 })], fondu: 4 },
+  // Musiques : la section la plus stable de chaque morceau (repérée au volume), boucle de 96 s + 4 s de fondu.
+  musique_veillee: { couches: [c('nightVigil', { depuis: 80, duree: 100 })], fondu: 4 },
+  musique_requiem: { couches: [c('burtsRequiem', { depuis: 20, duree: 100 })], fondu: 4 },
+  musique_sorcellerie: { couches: [c('witchCraft', { depuis: 14, duree: 100 })], fondu: 4 },
   amb_nuit: {
     couches: [c('foretNuit', { enBoucle: true, duree: 48 }), c('droneCreepy2', { depuis: 4, duree: 48, gain: 0.35 })],
     fondu: 4,

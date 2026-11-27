@@ -41,6 +41,7 @@ import { arreterScan, demarrerScan, ecranPartage, ecranScanner, lienDePartage } 
 import { PLANS_DEMO } from './plans-demo';
 import {
   basculerMuet,
+  choisirMorceau,
   choisirMusiquePerso,
   debloquerAudio,
   definirAmbiance,
@@ -49,8 +50,8 @@ import {
   lesReglages,
   nombreDeSonsDemandes,
   reglerVolume,
-  remettreMusiqueOrigine,
 } from './sons';
+import { MORCEAUX } from './sons-catalogue';
 import { ambianceDe, sonDeLEtape, sonsDebutPartie, sonsDuChangement } from './sons-evenements';
 import '@fontsource/eb-garamond/400.css';
 import '@fontsource/eb-garamond/500.css';
@@ -390,17 +391,20 @@ function carteSons(): string {
       ${curseur('ambiance', 'Ambiance nuit / jour')}
       ${curseur('effets', 'Effets et réveils')}
       <h2>Musique de fond</h2>
+      <div class="choix-ligne">${MORCEAUX.map((m) =>
+        bouton(echapper(m.titre), `data-morceau="${m.id}"`, !r.musiquePerso && r.morceau === m.id ? 'actif' : ''),
+      ).join('')}</div>
       <p class="note">${
         r.musiquePerso
           ? `Ta musique : <strong>${echapper(r.musiquePerso)}</strong>`
-          : "Musique d'origine de l'appli. Tu peux la remplacer par un fichier de la tablette (MP3, M4A…) : il reste sur cet appareil."
+          : "Trois musiques sombres au choix. Tu peux aussi mettre un fichier de la tablette (MP3, M4A…) : il reste sur cet appareil."
       }</p>
       <div class="choix-ligne">
         <label class="bouton-fichier">🎵 Choisir ma musique<input type="file" accept="audio/*" data-musique-fichier hidden></label>
-        ${r.musiquePerso ? bouton("Musique d'origine", 'data-musique-origine', 'discret') : ''}
       </div>
-      <p class="credits-sons">Musique : « Retro Synths » de HoliznaCC0 (CC0). Sons : « Oculus Audio Pack 01 » d'Oculus VR, LLC,
-        sous licence CC BY 4.0, et sons libres CC0 de Freesound, OpenGameArt, Kenney et Meta (liste dans CREDITS.md).</p>
+      <p class="credits-sons">Musiques : « Night Vigil » et « Burt's Requiem » (freepd.com, domaine public), « WitchCraft »
+        de HoliznaCC0 (CC0). Sons : « Oculus Audio Pack 01 » d'Oculus VR, LLC, sous licence CC BY 4.0, et sons libres CC0 de
+        Freesound, OpenGameArt, Kenney et Meta (liste dans CREDITS.md).</p>
     </section>`;
 }
 
@@ -852,8 +856,10 @@ function traiterClic(el: HTMLElement): void {
     basculerMuet();
     return afficher();
   }
-  if (d.musiqueOrigine !== undefined) {
-    void remettreMusiqueOrigine().then(afficher);
+  if (d.morceau !== undefined) {
+    const morceau = MORCEAUX.find((m) => m.id === d.morceau);
+    if (morceau) void choisirMorceau(morceau.id).then(afficher);
+    jouerEffet('ui_selection');
     return;
   }
 

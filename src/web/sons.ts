@@ -7,7 +7,7 @@
 // - Musique du MJ : son propre fichier (musique-perso.ts), lu en continu par un <audio>.
 // Le choix des sons selon la partie est dans sons-evenements.ts.
 import { lireMusiquePerso, enregistrerMusiquePerso, oublierMusiquePerso } from './musique-perso';
-import { MARGE_BOUCLE, SONS, type Canal, type IdSon } from './sons-catalogue';
+import { MARGE_BOUCLE, MORCEAUX, SONS, type Canal, type IdMorceau, type IdSon } from './sons-catalogue';
 import type { SonPrevu } from './sons-evenements';
 
 export interface Reglages {
@@ -17,19 +17,24 @@ export interface Reglages {
   effets: number;
   /** Tout couper d'un coup (bouton de la barre pendant la partie). */
   muet: boolean;
-  /** Nom du fichier de musique choisi par le MJ (null = musique d'origine). */
+  /** Nom du fichier de musique choisi par le MJ (null = une musique d'origine). */
   musiquePerso: string | null;
+  /** Musique d'origine choisie (quand le MJ n'a pas mis son propre fichier). */
+  morceau: IdMorceau;
 }
 
 const CLE_REGLAGES = 'malediction:sons';
-const REGLAGES_DEFAUT: Reglages = { musique: 50, ambiance: 60, effets: 80, muet: false, musiquePerso: null };
+const REGLAGES_DEFAUT: Reglages = { musique: 50, ambiance: 60, effets: 80, muet: false, musiquePerso: null, morceau: MORCEAUX[0].id };
 
 /** Durée des fondus entre deux ambiances ou deux musiques (s). */
 const FONDU = 2.5;
 
 function lireReglages(): Reglages {
   try {
-    return { ...REGLAGES_DEFAUT, ...(JSON.parse(localStorage.getItem(CLE_REGLAGES) ?? '{}') as Partial<Reglages>) };
+    const lus = { ...REGLAGES_DEFAUT, ...(JSON.parse(localStorage.getItem(CLE_REGLAGES) ?? '{}') as Partial<Reglages>) };
+    // Morceau inconnu (ancienne version de l'appli) : on reprend celui par défaut.
+    if (!MORCEAUX.some((m) => m.id === lus.morceau)) lus.morceau = REGLAGES_DEFAUT.morceau;
+    return lus;
   } catch {
     return { ...REGLAGES_DEFAUT };
   }
@@ -273,8 +278,9 @@ async function lancerMusique(): Promise<void> {
     return;
   }
   try {
-    const t = await charger('musique_fond');
-    if (musique === reservee) musique = boucleDeTampon('musique_fond', t, 'musique');
+    const id = reglages.morceau;
+    const t = await charger(id);
+    if (musique === reservee) musique = boucleDeTampon(id, t, 'musique');
   } catch {
     if (musique === reservee) musique = null;
   }
@@ -333,10 +339,11 @@ export async function choisirMusiquePerso(fichier: File): Promise<void> {
   relancerMusique();
 }
 
-/** Revenir à la musique d'origine de l'appli. */
-export async function remettreMusiqueOrigine(): Promise<void> {
-  await oublierMusiquePerso();
+/** Choisir une des musiques d'origine (et oublier le fichier du MJ s'il y en avait un). */
+export async function choisirMorceau(id: IdMorceau): Promise<void> {
+  if (reglages.musiquePerso) await oublierMusiquePerso();
   reglages.musiquePerso = null;
+  reglages.morceau = id;
   ecrireReglages();
   relancerMusique();
 }

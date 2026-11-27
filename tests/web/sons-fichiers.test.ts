@@ -34,7 +34,7 @@ describe('fichiers de sons', () => {
   });
 
   it('les sons en boucle ont une longueur de boucle', () => {
-    for (const id of ['musique_fond', 'amb_nuit', 'amb_jour'] as const) expect(SONS[id].boucle).toBeGreaterThan(0);
+    for (const id of ['musique_veillee', 'musique_requiem', 'musique_sorcellerie', 'amb_nuit', 'amb_jour'] as const) expect(SONS[id].boucle).toBeGreaterThan(0);
   });
 
   it('chaque son est monté à partir de bases déclarées, sous licence libre', () => {

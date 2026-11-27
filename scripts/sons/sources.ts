@@ -73,9 +73,12 @@ const musiqueCC0 = (chemin: string, titre: string, auteur: string, page: string)
 
 export const SOURCES = {
   // Musique
-  retroSynths: musiqueCC0(
-    'freemusicarchive.org/HoliznaCC0 - Retro Synths.mp3',
-    'Retro Synths',
+  // Musiques (sombres, en mineur). freepd.com : tout son catalogue est dans le domaine public.
+  nightVigil: musiqueCC0('freepd.com/Night Vigil.mp3', 'Night Vigil', 'freepd.com', 'https://freepd.com/'),
+  burtsRequiem: musiqueCC0("freepd.com/Burt's Requiem.mp3", "Burt's Requiem", 'freepd.com', 'https://freepd.com/'),
+  witchCraft: musiqueCC0(
+    'freemusicarchive.org/HoliznaCC0 - WitchCraft.mp3',
+    'WitchCraft',
     'HoliznaCC0',
     'https://freemusicarchive.org/music/holiznacc0/',
   ),

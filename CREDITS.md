@@ -18,8 +18,10 @@ sous le tableau doit accompagner l'appli.
 | 06 Speyer Cathedral Choir in Eastern Choir | blaukreuz | [source](https://freesound.org/s/131113/) | CC0 1.0 | oui (coupé, volume) | `role_sainte` |
 | Owl Hoot | Breviceps | [source](https://freesound.org/s/465697/) | CC0 1.0 | oui (coupé, volume) | `tr_nuit_tombe` |
 | Hunt Horn | Countrychap999 | [source](https://freesound.org/s/69206/) | CC0 1.0 | oui (coupé, volume) | `role_alpha` |
+| Burt's Requiem | freepd.com | [source](https://freepd.com/) | CC0 1.0 | oui (coupé, volume) | `musique_requiem` |
+| Night Vigil | freepd.com | [source](https://freepd.com/) | CC0 1.0 | oui (coupé, volume) | `musique_veillee` |
 | Crow | fvcalderan (OpenGameArt) | [source](https://opengameart.org/content/crow) | CC0 1.0 | oui (coupé, volume) | `role_augure` |
-| Retro Synths | HoliznaCC0 | [source](https://freemusicarchive.org/music/holiznacc0/) | CC0 1.0 | oui (coupé, volume) | `musique_fond` |
+| WitchCraft | HoliznaCC0 | [source](https://freemusicarchive.org/music/holiznacc0/) | CC0 1.0 | oui (coupé, volume) | `musique_sorcellerie` |
 | Nun singing and playing organ, distant, spooky, ethereal | jackjewers | [source](https://freesound.org/s/240208/) | CC0 1.0 | oui (coupé, volume) | `role_sectaire` |
 | Magic Spell SFX — magical_1 | JaggedStone (OpenGameArt) | [source](https://opengameart.org/content/magic-spell-sfx) | CC0 1.0 | oui (coupé, volume) | `role_enchanteur` |
 | RPG Audio — book_close | Kenney (kenney.nl) | [source](https://github.com/Boyquotes/kenney-rpg-audio-for-godot) | CC0 1.0 | oui (coupé, volume) | `role_inquisiteur` |
