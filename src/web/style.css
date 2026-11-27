@@ -71,7 +71,7 @@ body {
   font: 400 19px/1.45 var(--font-texte);
   font-variant-numeric: lining-nums;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color 600ms ease, color 600ms ease;
+  transition: background-color 600ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -94,7 +94,7 @@ button {
   background: var(--surface-haute);
   border: 1px solid var(--filet);
   border-radius: var(--arrondi-bouton);
-  padding: 0 20px;
+  padding: 0 var(--espace-6);
   min-height: 48px;
   cursor: pointer;
   margin: 0;
@@ -102,8 +102,6 @@ button {
 button:focus-visible { outline: 3px solid var(--or-vif); outline-offset: 2px; }
 button.principal { background: var(--or); color: var(--sur-or); border-color: transparent; }
 button.discret { background: transparent; border-color: transparent; color: var(--encre-douce); }
-/* Rouge : réservé à l'élimination (la charte réserve le rouge aux Spectres et aux morts). */
-button.sang { background: var(--sang-profond); color: var(--encre); border-color: var(--sang); }
 button.actif { border-color: var(--or); box-shadow: 0 0 0 1px var(--or) inset; color: var(--or-vif); }
 button:disabled { opacity: 0.4; cursor: default; }
 
@@ -123,7 +121,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .choix {
   max-width: 760px;
   margin: 0 auto;
-  padding: var(--espace-8) max(16px, env(safe-area-inset-right)) 3rem max(16px, env(safe-area-inset-left));
+  padding: var(--espace-8) max(var(--espace-4), env(safe-area-inset-right)) var(--espace-8) max(var(--espace-4), env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   gap: var(--espace-4);
@@ -152,7 +150,7 @@ button:disabled { opacity: 0.4; cursor: default; }
   background: var(--surface-haute);
   border: 1px solid var(--filet);
   border-radius: var(--arrondi-bouton);
-  padding: 0.5rem 0.7rem;
+  padding: var(--espace-2) var(--espace-3);
 }
 .prenom input:focus-visible, .champ:focus-visible { outline: 3px solid var(--or-vif); outline-offset: 1px; }
 .choix > .principal, .carte > button, .generateur > button { align-self: flex-start; }
@@ -163,7 +161,7 @@ button:disabled { opacity: 0.4; cursor: default; }
   justify-content: space-between;
   align-items: center;
   gap: var(--espace-4);
-  padding: var(--espace-2) max(16px, env(safe-area-inset-right)) var(--espace-2) max(16px, env(safe-area-inset-left));
+  padding: var(--espace-2) max(var(--espace-4), env(safe-area-inset-right)) var(--espace-2) max(var(--espace-4), env(safe-area-inset-left));
   background: var(--surface);
   border-bottom: 1px solid var(--filet);
   position: sticky;
@@ -176,7 +174,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .partie {
   display: grid;
   gap: var(--espace-6);
-  padding: var(--espace-4) max(16px, env(safe-area-inset-right)) var(--espace-8) max(16px, env(safe-area-inset-left));
+  padding: var(--espace-4) max(var(--espace-4), env(safe-area-inset-right)) var(--espace-8) max(var(--espace-4), env(safe-area-inset-left));
 }
 @media (min-width: 900px) {
   .partie { grid-template-columns: minmax(0, 1fr) 380px; align-items: start; }
@@ -201,14 +199,14 @@ button:disabled { opacity: 0.4; cursor: default; }
   left: calc(4% + var(--x, 50) * 0.92%);
   top: calc(8% + var(--y, 50) * 0.84%);
   transform: translate(-50%, -50%);
-  width: clamp(52px, 12.5cqi, 100px);
+  width: clamp(64px, 12.5cqi, 100px);
   min-height: 0;
   padding: 4px 3px 5px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1px;
-  font: 500 clamp(11px, 1.75cqi, 14px)/1.15 var(--font-texte);
+  font: 500 14px/1.15 var(--font-texte);
   border: 2px solid var(--or);
   border-radius: var(--arrondi-siege);
   background: var(--surface-haute);
@@ -222,26 +220,27 @@ button:disabled { opacity: 0.4; cursor: default; }
   object-position: top;
   pointer-events: none;
 }
-.siege .num { font-weight: 700; font-size: 1.4em; line-height: 1; font-variant-numeric: tabular-nums; }
+.siege .num { font-weight: 700; font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
 .siege .nom { font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .siege .role { color: var(--encre-douce); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .siege .badges { font-size: 0.95em; line-height: 1; }
 .siege .badges:empty, .siege .nom:empty { display: none; }
 .siege .fleche, .siege .voix {
   position: absolute;
-  font: 600 12px/1 var(--font-texte);
-  padding: 3px 7px;
+  font: 600 14px/1 var(--font-texte);
+  padding: var(--espace-1) var(--espace-2);
   border-radius: var(--arrondi-rond);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.siege .voix { top: -11px; background: var(--sang); color: #fff; }
-.siege .fleche { bottom: -13px; background: var(--or); color: var(--sur-or); }
+.siege .voix { top: -13px; background: var(--sang-profond); color: var(--encre); border: 1px solid var(--sang); }
+.siege .fleche { bottom: -14px; background: var(--or); color: var(--sur-or); }
 
 /* Salles chargées : sièges plus petits.
    Serrée : le prénom remplace le nom du rôle (la vignette montre le rôle).
    Très serrée : vignette et numéro côte à côte, une seule ligne de texte. */
-.salle.dense .siege { width: 9.6cqi; font-size: clamp(10px, 1.55cqi, 13px); }
+.salle.dense .siege { width: clamp(60px, 9.6cqi, 84px); }
+.salle.dense .siege .num { font-size: 18px; }
 .salle.dense .siege .vignette { width: 3.4cqi; height: 3.4cqi; }
 .salle.dense .siege .nom:not(:empty) + .role { display: none; }
 .salle.tres-dense .siege {
@@ -254,10 +253,11 @@ button:disabled { opacity: 0.4; cursor: default; }
   justify-items: center;
   align-items: center;
   column-gap: 3px;
-  font-size: clamp(9px, 1.4cqi, 12px);
+  /* Exception à la charte (14px minimum) : à 16 joueurs et plus, la légende descend jusqu'à 11px. */
+  font-size: clamp(11px, 1.4cqi, 12px);
 }
 .salle.tres-dense .siege .vignette { grid-area: v; width: 2.6cqi; height: 2.6cqi; }
-.salle.tres-dense .siege .num { grid-area: n; font-size: 1.3em; }
+.salle.tres-dense .siege .num { grid-area: n; font-size: 16px; }
 .salle.tres-dense .siege .nom, .salle.tres-dense .siege .role { grid-area: l; }
 .salle.tres-dense .siege .nom:not(:empty) + .role { display: none; }
 .salle.tres-dense .siege .badges { grid-area: b; }
@@ -271,7 +271,8 @@ button:disabled { opacity: 0.4; cursor: default; }
 .siege.acteur { opacity: 1; box-shadow: var(--halo-eveil); }
 .siege.choisi { opacity: 1; background: var(--or); color: var(--sur-or); }
 .siege.choisi .role { color: var(--sur-or); }
-.siege.mort { opacity: 0.35; filter: grayscale(1); }
+.siege.mort { opacity: 0.35; }
+.siege.mort > * { filter: grayscale(1); }
 /* Un mort qui peut voter (jour pair, « les morts votent ») reste lisible. */
 .siege.mort.actif { opacity: 0.8; cursor: pointer; }
 
@@ -295,6 +296,7 @@ button:disabled { opacity: 0.4; cursor: default; }
   box-shadow: var(--ombre-carte);
   object-fit: cover;
 }
+.panneau .blason-fin { width: 132px; height: auto; align-self: center; margin: var(--espace-4) 0; }
 .panneau .titre-role { font-size: 30px; line-height: 1.15; text-align: center; }
 .consigne { font-size: 23px; line-height: 1.4; }
 .qui { color: var(--encre-douce); }
@@ -306,7 +308,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .generateur {
   max-width: 900px;
   margin: 0 auto;
-  padding: var(--espace-4) max(16px, env(safe-area-inset-right)) 3rem max(16px, env(safe-area-inset-left));
+  padding: var(--espace-4) max(var(--espace-4), env(safe-area-inset-right)) var(--espace-8) max(var(--espace-4), env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   gap: var(--espace-4);
@@ -369,7 +371,7 @@ button.rond { width: 48px; padding: 0; font-size: 22px; }
   align-items: center;
   justify-content: center;
   gap: var(--espace-4);
-  padding: var(--espace-6) max(16px, env(safe-area-inset-right)) var(--espace-6) max(16px, env(safe-area-inset-left));
+  padding: var(--espace-6) max(var(--espace-4), env(safe-area-inset-right)) var(--espace-6) max(var(--espace-4), env(safe-area-inset-left));
   text-align: center;
 }
 .revelation-qui { margin: 0; color: var(--encre-douce); font-size: 22px; }

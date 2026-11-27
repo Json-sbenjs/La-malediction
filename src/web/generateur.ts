@@ -15,6 +15,7 @@ import {
   type RoleId,
 } from '../engine';
 import { densite } from './densite';
+import { SI_PAS_D_IMAGE } from './images';
 
 export interface EtatGenerateur {
   salle: string;
@@ -62,7 +63,7 @@ function ligneRole(g: EtatGenerateur, role: RoleId): string {
   const pas = role === 'trinite' || role === 'doubles' ? def.cartes : 1;
   return `
     <li class="ligne-role camp-${def.camp}">
-      <img class="vignette" src="${import.meta.env.BASE_URL}roles/${role}.webp" alt="">
+      <img class="vignette" src="${import.meta.env.BASE_URL}roles/${role}.webp" alt="" ${SI_PAS_D_IMAGE}>
       <span class="nom-role">${echapper(def.nom)}</span>
       <span class="compteur">
         ${bouton('−', `data-gen-moins="${role}" data-pas="${pas}" ${n === 0 ? 'disabled' : ''}`, 'rond')}
@@ -79,7 +80,7 @@ function apercu(plan: Plan, choisi: number | null): string {
       (s) => `
       <button type="button" class="siege actif camp-${ROLES[s.role].camp} ${choisi === s.numero ? 'choisi' : ''}"
         data-gen-siege="${s.numero}" style="--x:${s.position.x};--y:${s.position.y}">
-        <img class="vignette" src="${import.meta.env.BASE_URL}roles/${s.role}.webp" alt="">
+        <img class="vignette" src="${import.meta.env.BASE_URL}roles/${s.role}.webp" alt="" ${SI_PAS_D_IMAGE}>
         <span class="num">${s.numero}</span>
         <span class="role">${echapper(ROLES[s.role].nom)}</span>
       </button>`,
@@ -129,7 +130,7 @@ export function ecranGenerateur(g: EtatGenerateur): string {
         ${juste ? '' : `<p class="attention">Il faut autant de rôles que de joueurs.</p>`}
         ${
           g.plan
-            ? `<p class="consigne">Touche deux sièges pour échanger leurs rôles.</p>
+            ? `<p>Touche deux sièges pour échanger leurs rôles.</p>
                ${apercu(g.plan, g.siegeChoisi)}`
             : ''
         }

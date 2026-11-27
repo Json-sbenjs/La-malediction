@@ -48,7 +48,7 @@ Règles :
 Deux familles, toutes deux sur Google Fonts. Dans l'appli, on les embarque (paquets `@fontsource`) pour qu'elles marchent hors ligne.
 
 - **Uncial Antiqua** (`onciale`) : l'écriture du verso. Titres seulement : nom du jeu, phase, nom du rôle, intertitres. Jamais pour une phrase.
-- **EB Garamond** (`texte`) : une police de livre ancien très lisible, pour tout le reste. La consigne lue à voix haute est la plus grande (23px) ; rien en dessous de 14px.
+- **EB Garamond** (`texte`) : une police de livre ancien très lisible, pour tout le reste. La consigne lue à voix haute est la plus grande (23px) ; rien en dessous de 14px, sauf la légende des sièges à 16 joueurs et plus (voir « La salle »).
 - Les noms imprimés sur les cartes, en gothique blanc cerné de noir, restent propres aux cartes. L'appli ne les imite pas.
 - Les chiffres (numéros de sièges, voix) sont alignés en tableau (`tabular-nums`).
 
@@ -66,7 +66,7 @@ Les 28 illustrations des cartes (groupe d'assets **Illustrations**), en 512 × 5
 Les sièges suivent le plan de la salle (tour de table, table rectangulaire, tables en U) et rétrécissent quand la salle se remplit :
 - **jusqu'à 10 joueurs** : numéro, vignette, prénom, rôle et état ;
 - **de 11 à 15 joueurs** : le prénom remplace le nom du rôle (la vignette montre le rôle) ;
-- **16 joueurs et plus** : vignette et numéro côte à côte, une seule ligne de texte.
+- **16 joueurs et plus** : vignette et numéro côte à côte, une seule ligne de texte. C'est la seule exception à la taille minimale de 14px : la légende peut descendre jusqu'à 11px pour que les sièges ne se chevauchent pas.
 
 ## Nuit et jour
 
