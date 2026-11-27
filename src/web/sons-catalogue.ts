@@ -70,15 +70,15 @@ const SONS_FIXES = {
 
   // Fin de partie
   fin_pelerins: son('fin', 'fin_pelerins', 'effet', 'Cloches et cuivres en majeur : victoire des Pèlerins.'),
-  fin_spectres: son('fin', 'fin_spectres', 'effet', 'Accord grave distordu et hurlement : victoire des Spectres.'),
+  fin_spectres: son('fin', 'fin_spectres', 'effet', 'Accord grave distordu et grand rire de clown : victoire des Spectres.'),
   fin_solitaire: son('fin', 'fin_solitaire', 'effet', 'Boîte à musique désaccordée : victoire d\'un solitaire ou d\'un groupe.'),
   fin_personne: son('fin', 'fin_personne', 'effet', 'Vent et un seul coup de glas : personne ne gagne.'),
 } satisfies Record<string, DefSon>;
 
 /** Son joué au réveil (ou à la présentation) de chaque rôle. */
 export const DESCRIPTION_ROLES: Record<RoleId, string> = {
-  spectre: 'Plainte de fantôme qui glisse, souffle glacé.',
-  originel: 'Plainte plus grave et grognement : le premier des Spectres.',
+  spectre: 'Ricanement de clown qui fait peur, doublé d\'une voix grave, boîte à musique fausse.',
+  originel: 'Rire de clown grave et lent, grondement : le premier des Spectres.',
   maudit: 'Grognement distordu puis hurlement de bête.',
   pelerin: 'Bâton de marche sur la pierre et clochette.',
   devoue: 'Harpe qui monte, douce et sincère.',

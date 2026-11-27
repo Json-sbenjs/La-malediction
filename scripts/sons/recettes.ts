@@ -103,6 +103,117 @@ function formants(source: Son, voyelle: [number, number, number][]): Son {
   return s;
 }
 
+// ─── Rire de clown (Spectres) ──────────────────────────────────────────
+
+type Voyelle = [number, number, number][];
+/** Voyelles d'un rire aigu, presque enfantin (formants un peu plus hauts qu'une voix d'adulte). */
+const RIRE_A: Voyelle = [[900, 6, 1], [1400, 8, 0.6], [2900, 10, 0.3]];
+const RIRE_I: Voyelle = [[350, 6, 1], [2500, 10, 0.6], [3200, 12, 0.35]];
+const RIRE_E: Voyelle = [[550, 6, 1], [1850, 9, 0.5], [2600, 10, 0.3]];
+const RIRE_O: Voyelle = [[480, 6, 1], [850, 8, 0.45], [2700, 10, 0.15]];
+
+/** Ramène le pic d'un son à `crete` (pour doser des couches entre elles). */
+function aCrete(s: Son, crete: number): Son {
+  let pic = 0;
+  for (let i = 0; i < s.length; i++) pic = Math.max(pic, Math.abs(s[i]));
+  if (pic > 0) for (let i = 0; i < s.length; i++) s[i] *= crete / pic;
+  return s;
+}
+
+/**
+ * Source de voix humaine : impulsions de la glotte (modèle de Rosenberg), dérivées comme par les lèvres,
+ * avec un léger tremblement de hauteur à chaque période. Bien plus « gorge » qu'une onde en scie,
+ * qui sonne comme une trompe.
+ */
+function glotte(duree: number, freq: Valeur, graine: number, tremblement = 0.02): Son {
+  const s = silence(duree);
+  const alea = hasard(graine);
+  const ouverture = 0.45;
+  const fermeture = 0.2;
+  let p = 0;
+  let ecart = 0;
+  let cible = 0;
+  let avant = 0;
+  for (let i = 0; i < s.length; i++) {
+    const t = i / SR;
+    const f = (typeof freq === 'number' ? freq : freq(t)) * (1 + ecart);
+    let g = 0;
+    if (p < ouverture) g = 0.5 * (1 - Math.cos((Math.PI * p) / ouverture));
+    else if (p < ouverture + fermeture) g = Math.cos((Math.PI * (p - ouverture)) / (2 * fermeture));
+    s[i] = g - avant;
+    avant = g;
+    p += f / SR;
+    if (p >= 1) {
+      p -= 1;
+      cible = (alea() * 2 - 1) * tremblement;
+    }
+    ecart += (cible - ecart) * 0.02;
+  }
+  return s;
+}
+
+/** Une syllabe de rire : « h » soufflé puis voyelle chantée dont la hauteur retombe. */
+interface Syllabe {
+  debut: number;
+  /** Durée de la voyelle (s). */
+  duree: number;
+  /** Hauteur de départ (Hz). */
+  hauteur: number;
+  voyelle: Voyelle;
+  force: number;
+}
+
+function syllabe(sy: Syllabe, graine: number, souffle: number): Son {
+  const total = sy.duree + 0.08;
+  const h = formants(bruit(total, graine), sy.voyelle);
+  aCrete(h, souffle);
+  volume(h, (t) => (t < 0.02 ? t / 0.02 : t < 0.045 ? 1 : Math.max(0.15, 1 - (t - 0.045) / 0.03)) * Math.max(0, 1 - t / total));
+  const voisee = formants(glotte(total, (t) => sy.hauteur * (1.06 - 0.22 * Math.min(1, t / sy.duree)), graine + 1), sy.voyelle);
+  aCrete(voisee, 1);
+  volume(voisee, (t) => (t < 0.03 ? 0 : Math.min(1, (t - 0.03) / 0.015) * Math.exp(-Math.max(0, t - 0.03 - sy.duree * 0.5) / (sy.duree * 0.35))));
+  return aCrete(ajouter(voisee, h), sy.force);
+}
+
+/** Suite de syllabes « ha-ha-ha » (ou « hi », « hé », « ho »). */
+function rire(syllabes: Syllabe[], graine: number, souffle = 0.35, decalageHauteur = 1, decalageVoyelle = 1): Son {
+  const fin = Math.max(...syllabes.map((sy) => sy.debut + sy.duree)) + 0.3;
+  const s = silence(fin);
+  syllabes.forEach((sy, k) => {
+    const voyelle = sy.voyelle.map(([f, q, g]): [number, number, number] => [f * decalageVoyelle, q, g]);
+    ajouter(s, syllabe({ ...sy, hauteur: sy.hauteur * decalageHauteur, voyelle }, graine + k * 17, souffle), sy.debut);
+  });
+  return s;
+}
+
+/** Fabrique `n` syllabes régulières, de plus en plus graves et faibles (le rire qui s'essouffle). */
+function serie(n: number, debut: number, ecart: number, hauteur: number, chute: number, voyelle: Voyelle, duree: number): Syllabe[] {
+  return Array.from({ length: n }, (_, k) => ({
+    debut: debut + k * ecart * (1 - k * 0.015),
+    duree,
+    hauteur: hauteur * (1 - (chute * k) / Math.max(1, n - 1)),
+    voyelle,
+    force: 1 - 0.35 * (k / Math.max(1, n - 1)) + (k === 0 ? 0.1 : 0),
+  }));
+}
+
+/** Inspiration sifflante à la fin du rire (« hiiiii »). */
+function inspiration(duree: number, graine: number): Son {
+  const s = formants(bruit(duree, graine), RIRE_I);
+  ajouter(s, filtre(bruit(duree, graine + 1), 'passe-bande', (t) => 3000 + 2000 * (t / duree), 4), 0, 0.5);
+  return volume(s, (t) => Math.sin((Math.PI * t) / duree) ** 0.7);
+}
+
+/** Boîte à musique de cirque, fausse et lente : le clown est quelque part dans le noir. */
+function boiteCirque(notes: number[], ecart: number, desaccord: number, graine: number): Son {
+  const alea = hasard(graine);
+  const s = silence(notes.length * ecart + 2);
+  notes.forEach((n, i) => {
+    const fausse = note(n) * (1 + (alea() * 2 - 1) * desaccord);
+    ajouter(s, cloche(1.8, fausse, [[1, 1, 1], [3.9, 0.25, 0.2], [9.2, 0.06, 0.05]]), i * ecart * (1 + i * 0.03), 0.6);
+  });
+  return s;
+}
+
 /** Voix de chœur sur une voyelle, avec vibrato. */
 function voix(freq: Valeur, duree: number, voyelle = VOYELLE_A, graine = 4): Son {
   const f = (t: number) => (typeof freq === 'number' ? freq : freq(t)) * (1 + 0.006 * Math.sin(2 * Math.PI * 5 * t + graine));
@@ -606,15 +717,32 @@ export const RECETTES: Record<IdSon, Recette> = {
   },
   fin_spectres: {
     fabriquer: () => {
-      const grave = silence(5);
-      for (const n of [26, 27, 33]) ajouter(grave, unisson('scie', 5, note(n), 4, 18, n), 0, 0.4);
+      const grave = silence(6);
+      for (const n of [26, 27, 33]) ajouter(grave, unisson('scie', 6, note(n), 4, 18, n), 0, 0.4);
       filtre(grave, 'passe-bas', (t) => 200 + 1200 * Math.exp(-t / 1.5), 3);
       saturer(grave, 3);
-      enveloppe(grave, 0.05, 1.5, 1.5);
-      const plainte = voix((t) => 300 + 250 * Math.sin(Math.min(1, t / 2.5) * Math.PI * 0.6), 3, VOYELLE_OU, 9);
-      volume(plainte, (t) => Math.sin((Math.PI * t) / 3));
-      chorus(plainte, 10, 4, 0.5, 0.6, 0.5);
-      return reverb(mix(6, [grave, 0, 1], [plainte, 0.8, 0.6], [tambour(80, 30, 2, 111), 0, 1]), 0.45, 0.9, 0.4, 2);
+      enveloppe(grave, 0.05, 1.8, 1.8);
+      // Grand rire de clown qui monte puis s'essouffle, à deux voix.
+      const syllabes: Syllabe[] = [
+        ...serie(4, 0, 0.13, 420, -0.15, RIRE_I, 0.06),
+        ...serie(9, 0.6, 0.15, 400, 0.4, RIRE_A, 0.1),
+      ];
+      const rires = mix(
+        4.2,
+        [rire(syllabes, 501), 0, 1],
+        [rire(syllabes, 511, 0.2, 0.5, 0.8), 0.025, 0.5],
+        [inspiration(0.7, 521), 2.2, 0.35],
+      );
+      chorus(rires, 8, 2, 0.7, 0.3, 0.25);
+      echo(rires, 0.27, 0.35, 0.35);
+      const cirque = boiteCirque([86, 90, 93, 98, 93, 90, 86, 85, 86], 0.3, 0.015, 531);
+      return reverb(
+        mix(6.5, [grave, 0, 0.7], [tambour(80, 30, 2, 111), 0, 1], [rires, 0.4, 0.9], [cirque, 0.4, 0.07]),
+        0.45,
+        0.9,
+        0.4,
+        2,
+      );
     },
   },
   fin_solitaire: {
@@ -640,23 +768,32 @@ export const RECETTES: Record<IdSon, Recette> = {
   // ── Rôles : un son de réveil chacun ──
   role_spectre: {
     fabriquer: () => {
-      const plainte = voix((t) => 480 + 220 * Math.sin(Math.PI * Math.min(1, t / 2.4)) - 120 * Math.max(0, t - 1.6), 2.6, VOYELLE_OU, 3);
-      volume(plainte, (t) => Math.sin((Math.PI * t) / 2.6) ** 1.5);
-      chorus(plainte, 11, 5, 0.4, 0.6, 0.5);
-      const glace = filtre(bruitRose(2.6, 131), 'passe-haut', 2500);
-      volume(glace, (t) => 0.3 * Math.sin((Math.PI * t) / 2.6));
-      return reverb(mix(3, [plainte, 0, 1], [glace, 0, 0.6]), 0.5, 0.9, 0.4, 2);
+      // « hi-hi-hi… HA-HA-HA-HA-HA » puis inspiration sifflante : rire de clown qui fait peur.
+      const syllabes = [...serie(3, 0, 0.12, 470, 0.08, RIRE_I, 0.06), ...serie(6, 0.5, 0.165, 380, 0.3, RIRE_A, 0.1)];
+      const aigu = rire(syllabes, 301);
+      // Le même rire, une octave plus bas et un peu en retard : une deuxième voix, pas humaine.
+      const grave = rire(syllabes, 311, 0.2, 0.5, 0.8);
+      const rires = mix(3.2, [aigu, 0, 1], [grave, 0.025, 0.45], [inspiration(0.55, 321), 1.6, 0.35]);
+      chorus(rires, 8, 2, 0.7, 0.3, 0.25);
+      echo(rires, 0.23, 0.3, 0.3);
+      const cirque = boiteCirque([86, 90, 93, 90, 86, 85], 0.28, 0.012, 331);
+      return reverb(mix(3.8, [rires, 0, 1], [cirque, 0, 0.06]), 0.4, 0.88, 0.4, 1.8);
     },
   },
   role_originel: {
     fabriquer: () => {
-      const plainte = voix((t) => 280 + 140 * Math.sin(Math.PI * Math.min(1, t / 2.4)), 2.6, VOYELLE_OU, 5);
-      volume(plainte, (t) => Math.sin((Math.PI * t) / 2.6) ** 1.5);
-      chorus(plainte, 13, 5, 0.3, 0.7, 0.5);
-      const grogne = oscillateur('scie', 1.8, (t) => 58 + 6 * Math.sin(2 * Math.PI * 7 * t));
-      volume(grogne, (t) => (0.6 + 0.4 * Math.sin(2 * Math.PI * 23 * t)) * Math.sin((Math.PI * t) / 1.8));
-      saturer(filtre(grogne, 'passe-bas', 450, 2), 3);
-      return reverb(mix(3.2, [grogne, 0, 0.8], [plainte, 0.4, 0.9]), 0.45, 0.9, 0.4, 2);
+      // Le premier des Spectres : rire grave et lent « hé… hé… HO-HO-HO », voix doublée en dessous, grondement.
+      const syllabes = [...serie(2, 0, 0.32, 210, 0.05, RIRE_E, 0.12), ...serie(4, 0.75, 0.24, 175, 0.25, RIRE_O, 0.15)];
+      const voix1 = rire(syllabes, 401, 0.3, 1, 0.85);
+      const voix2 = rire(syllabes, 411, 0.2, 0.5, 0.7);
+      const rires = mix(3.4, [voix1, 0, 1], [voix2, 0.03, 0.7]);
+      saturer(rires, 1.8);
+      echo(rires, 0.31, 0.35, 0.3);
+      const grogne = oscillateur('scie', 2.4, (t) => 52 + 5 * Math.sin(2 * Math.PI * 6 * t));
+      volume(grogne, (t) => (0.6 + 0.4 * Math.sin(2 * Math.PI * 21 * t)) * Math.sin((Math.PI * t) / 2.4));
+      saturer(filtre(grogne, 'passe-bas', 380, 2), 3);
+      const cirque = boiteCirque([74, 78, 81, 78, 74, 73], 0.4, 0.02, 421);
+      return reverb(mix(3.8, [grogne, 0, 0.35], [rires, 0.1, 1], [cirque, 0, 0.06]), 0.45, 0.9, 0.4, 2);
     },
   },
   role_maudit: {

@@ -53,7 +53,7 @@ créés par `npm run sons`. Source : création originale du projet.
 | L'Oracle désigne un joueur | effet | Scintillement de cristal : le rôle est montré à l'Oracle. | `sons/sfx/sfx_revelation.mp3` |
 | Info secrète d'un pouvoir de nuit (Instinct) | effet | Murmure soufflé : une info secrète pour le MJ. | `sons/sfx/sfx_murmure.mp3` |
 | Victoire des Pèlerins | fin de partie | Cloches et cuivres en majeur : victoire des Pèlerins. | `sons/fin/fin_pelerins.mp3` |
-| Victoire des Spectres | fin de partie | Accord grave distordu et hurlement : victoire des Spectres. | `sons/fin/fin_spectres.mp3` |
+| Victoire des Spectres | fin de partie | Accord grave distordu et grand rire de clown : victoire des Spectres. | `sons/fin/fin_spectres.mp3` |
 | Victoire d'un solitaire, de la Trinité ou des Doubles | fin de partie | Boîte à musique désaccordée : victoire d'un solitaire ou d'un groupe. | `sons/fin/fin_solitaire.mp3` |
 | Personne ne gagne | fin de partie | Vent et un seul coup de glas : personne ne gagne. | `sons/fin/fin_personne.mp3` |
 
@@ -64,8 +64,8 @@ Joué quand le rôle est présenté (nuit d'explication), quand il se réveille 
 
 | Rôle | Ce qu'on entend | Fichier |
 |---|---|---|
-| spectre | Plainte de fantôme qui glisse, souffle glacé. | `sons/roles/role_spectre.mp3` |
-| originel | Plainte plus grave et grognement : le premier des Spectres. | `sons/roles/role_originel.mp3` |
+| spectre | Ricanement de clown qui fait peur, doublé d'une voix grave, boîte à musique fausse. | `sons/roles/role_spectre.mp3` |
+| originel | Rire de clown grave et lent, grondement : le premier des Spectres. | `sons/roles/role_originel.mp3` |
 | maudit | Grognement distordu puis hurlement de bête. | `sons/roles/role_maudit.mp3` |
 | pelerin | Bâton de marche sur la pierre et clochette. | `sons/roles/role_pelerin.mp3` |
 | devoue | Harpe qui monte, douce et sincère. | `sons/roles/role_devoue.mp3` |

@@ -155,7 +155,8 @@ export function cloche(duree: number, freq: number, partiels: [number, number, n
       s[i] += volume * Math.sin(2 * Math.PI * f * t) * Math.exp(-t / tau);
     }
   }
-  return attaque(s, 0.002);
+  // Fondu de sortie : une cloche coupée net à la fin de son tampon fait un clic.
+  return fondus(attaque(s, 0.002), 0, Math.min(0.25, duree * 0.3));
 }
 
 /** Partiels d'une cloche d'église (hum, fondamentale, tierce mineure, quinte, octave…). */
