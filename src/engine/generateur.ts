@@ -150,10 +150,15 @@ export interface OptionsGenerateur {
   composition: Composition;
   /** Pour des tirages reproductibles dans les tests. */
   alea?: () => number;
+  /**
+   * Positions déjà placées à la main (dans l'ordre des sièges) : on les garde
+   * au lieu de la disposition de la forme, si le nombre de sièges n'a pas changé.
+   */
+  positions?: Siege['position'][];
 }
 
 /** Crée un plan : un siège par carte, les rôles tirés au hasard sur les sièges. */
-export function genererPlan({ salle, forme, composition, alea }: OptionsGenerateur): Plan {
+export function genererPlan({ salle, forme, composition, alea, positions: gardees }: OptionsGenerateur): Plan {
   const nom = salle.trim();
   if (!nom) throw new Error('Donne un nom à la salle');
 
@@ -161,7 +166,7 @@ export function genererPlan({ salle, forme, composition, alea }: OptionsGenerate
     Array.from({ length: nb }, () => role),
   );
   const tires = melanger(roles, alea);
-  const positions = disposer(forme, tires.length);
+  const positions = gardees?.length === tires.length ? gardees : disposer(forme, tires.length);
 
   const plan: Plan = {
     id: `${nom}-${tires.length}`,
@@ -184,5 +189,19 @@ export function echangerRoles(plan: Plan, a: number, b: number): Plan {
     sieges: plan.sieges.map((s) =>
       s.numero === a ? { ...s, role: roleB } : s.numero === b ? { ...s, role: roleA } : s,
     ),
+  };
+}
+
+/**
+ * Déplace un siège sur le plan (le MJ le fait glisser pour suivre la vraie salle).
+ * La position est en % du plan, gardée dans le plan (0 à 100) et arrondie au dixième.
+ */
+export function deplacerSiege(plan: Plan, numero: number, position: Siege['position']): Plan {
+  if (!plan.sieges.some((s) => s.numero === numero)) throw new Error('Siège inconnu');
+  const borne = (v: number) => Math.round(Math.min(100, Math.max(0, v)) * 10) / 10;
+  const nouvelle = { x: borne(position.x), y: borne(position.y) };
+  return {
+    ...plan,
+    sieges: plan.sieges.map((s) => (s.numero === numero ? { ...s, position: nouvelle } : s)),
   };
 }

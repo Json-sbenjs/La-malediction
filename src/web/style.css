@@ -223,7 +223,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .siege .num { font-weight: 700; font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
 .siege .nom { font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .siege .role { color: var(--encre-douce); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.siege .badges { font-size: 0.95em; line-height: 1; }
+.siege .badges { font-size: 14px; line-height: 1; }
 .siege .badges:empty, .siege .nom:empty { display: none; }
 .siege .fleche, .siege .voix {
   position: absolute;
@@ -260,7 +260,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .salle.tres-dense .siege .num { grid-area: n; font-size: 16px; }
 .salle.tres-dense .siege .nom, .salle.tres-dense .siege .role { grid-area: l; }
 .salle.tres-dense .siege .nom:not(:empty) + .role { display: none; }
-.salle.tres-dense .siege .badges { grid-area: b; }
+.salle.tres-dense .siege .badges { grid-area: b; font-size: 1em; }
 
 .siege.camp-pelerins { border-color: var(--or); }
 .siege.camp-spectres { border-color: var(--sang); }
@@ -395,4 +395,57 @@ button.rond { width: 48px; padding: 0; font-size: 22px; }
   border-left: 3px solid var(--or);
   background: var(--surface-haute);
   border-radius: 0 var(--arrondi-bouton) var(--arrondi-bouton) 0;
+}
+
+/* ── Partage d'une salle (QR code) et scanner ────── */
+.plein-ecran {
+  min-height: 100vh;
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espace-4);
+  padding: var(--espace-6) max(var(--espace-4), env(safe-area-inset-right)) var(--espace-6) max(var(--espace-4), env(safe-area-inset-left));
+  text-align: center;
+}
+.titre-plein-ecran { font-size: 30px; line-height: 1.15; }
+.plein-ecran .boutons { justify-content: center; }
+.plein-ecran .info, .plein-ecran .erreur { align-self: stretch; }
+.aide { margin: 0; }
+/* Le QR code reste foncé sur clair pour que tous les appareils photo le lisent :
+   modules couleur fond, sur un carré parchemin (encre). */
+.qr {
+  width: min(62vh, 86vw, 480px);
+  aspect-ratio: 1;
+  border-radius: var(--arrondi-siege);
+  overflow: hidden;
+}
+.qr svg { display: block; width: 100%; height: 100%; }
+.qr svg rect { fill: var(--encre); }
+.qr svg path { fill: var(--fond); }
+.camera {
+  width: min(62vh, 86vw, 480px);
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--surface);
+  border: 1px solid var(--filet);
+  border-radius: var(--arrondi-panneau);
+}
+.coller { align-self: stretch; display: flex; flex-direction: column; gap: var(--espace-2); text-align: left; }
+.coller span { color: var(--encre-douce); }
+
+/* ── Générateur : déplacer un siège (appui long puis glisser) ── */
+.siege[data-deplacable] {
+  touch-action: none; /* le doigt déplace le siège au lieu de faire défiler la page */
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.siege.saisi {
+  opacity: 1;
+  z-index: 3;
+  cursor: grabbing;
+  box-shadow: 0 0 0 3px var(--or-vif), var(--ombre-carte);
 }

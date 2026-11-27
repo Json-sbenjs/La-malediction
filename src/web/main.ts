@@ -22,12 +22,22 @@ import {
   type Plan,
   type RoleId,
   annuler,
+  decoderPlan,
   memoriser,
+  PARAM_PARTAGE,
 } from '../engine';
 import { consigneReveil, modeSaisie } from './consignes';
-import { clicGenerateur, ecranGenerateur, nouveauGenerateur, type EtatGenerateur } from './generateur';
+import {
+  clicGenerateur,
+  deplacerDansGenerateur,
+  ecranGenerateur,
+  nouveauGenerateur,
+  type EtatGenerateur,
+} from './generateur';
+import { activerDeplacement, clicApresDeplacement } from './deplacement';
 import { densite } from './densite';
 import { SI_PAS_D_IMAGE } from './images';
+import { arreterScan, demarrerScan, ecranPartage, ecranScanner, lienDePartage } from './partage';
 import { PLANS_DEMO } from './plans-demo';
 import '@fontsource/eb-garamond/400.css';
 import '@fontsource/eb-garamond/500.css';
@@ -67,6 +77,30 @@ function estPerso(salle: string, nb: number): boolean {
   return plansPerso.some((p) => p.salle === salle && p.nbJoueurs === nb);
 }
 
+/** Ajoute (ou remplace) une salle sur mesure et la sélectionne sur l'écran de choix. */
+function ajouterPlanPerso(plan: Plan): void {
+  plansPerso = [...plansPerso.filter((p) => p.id !== plan.id), plan];
+  ecrirePlansPerso();
+  ui.salle = plan.salle;
+  ui.nbJoueurs = plan.nbJoueurs;
+  ui.prenoms = [];
+}
+
+/** Ajoute la salle d'un lien de partage (QR code scanné ou lien collé). Renvoie false si le lien est mauvais. */
+function importerSalle(texte: string): boolean {
+  try {
+    const plan = decoderPlan(texte);
+    const remplace = plansPerso.some((p) => p.id === plan.id);
+    ajouterPlanPerso(plan);
+    ui.info = `Salle « ${plan.salle} » à ${plan.nbJoueurs} joueurs ${remplace ? 'mise à jour' : 'ajoutée'}.`;
+    ui.erreur = null;
+    return true;
+  } catch (e) {
+    ui.erreur = e instanceof Error ? e.message : String(e);
+    return false;
+  }
+}
+
 // ─── État de l'interface ──────────────────────────────────────────────
 
 interface Ui {
@@ -88,6 +122,14 @@ interface Ui {
   revelation: JoueurId | null;
   /** États d'avant chaque action, pour « Annuler ». */
   historique: Historique;
+  /** Salle montrée en QR code pour la partager (null = écran fermé). */
+  partage: Plan | null;
+  /** Écran « Scanner une salle » ouvert. */
+  scanner: boolean;
+  /** La caméra a été refusée : on ne la relance pas, il reste le lien à coller. */
+  cameraEnPanne: boolean;
+  /** Message de réussite sur l'écran de choix ou de partage (salle ajoutée, lien copié). */
+  info: string | null;
 }
 
 const ui: Ui = {
@@ -96,6 +138,10 @@ const ui: Ui = {
   generateur: null,
   revelation: null,
   historique: [],
+  partage: null,
+  scanner: false,
+  cameraEnPanne: false,
+  info: null,
   salle: sallesDisponibles(tousLesPlans())[0] ?? '',
   nbJoueurs: 0,
   prenoms: [],
@@ -295,9 +341,12 @@ function ecranChoix(): string {
           .join('')}</div>
         <div class="choix-ligne">
           ${bouton('🛠️ Salle sur mesure', 'data-ouvrir-generateur')}
+          ${bouton('📷 Scanner une salle', 'data-scanner')}
+          ${estPerso(ui.salle, ui.nbJoueurs) ? bouton('Partager (QR code)', 'data-partager') : ''}
           ${estPerso(ui.salle, ui.nbJoueurs) ? bouton('Supprimer ce plan', 'data-supprimer-plan', 'discret') : ''}
         </div>
       </section>
+      ${ui.info ? `<p class="info">${echapper(ui.info)}</p>` : ''}
       ${ui.nbJoueurs > 0 ? `<section class="carte"><h2>Prénoms</h2><div class="prenoms">${champsPrenoms}</div></section>` : ''}
       ${ui.erreur ? `<p class="erreur">${echapper(ui.erreur)}</p>` : ''}
       ${bouton('Commencer la partie', 'data-commencer', 'principal')}
@@ -627,8 +676,13 @@ function themeVoulu(): 'nuit' | 'jour' {
 const moinsDAnimations = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 function afficher(): void {
+  if (!ui.scanner) arreterScan();
   app.innerHTML = ui.generateur
     ? ecranGenerateur(ui.generateur)
+    : ui.partage
+      ? ecranPartage(ui.partage, ui.info)
+    : ui.scanner
+      ? ecranScanner(ui.erreur)
     : ui.etat && ui.revelation !== null
       ? ecranRevelation(ui.revelation)
       : ui.etat
@@ -645,6 +699,23 @@ function afficher(): void {
     if (!premiereFois && !moinsDAnimations.matches) {
       app.animate([{ opacity: 0.25 }, { opacity: 1 }], { duration: 600, easing: 'ease-out' });
     }
+  }
+
+  // Scanner : la caméra se (re)lance dans la vidéo qu'on vient d'afficher.
+  const video = app.querySelector<HTMLVideoElement>('video.camera');
+  if (ui.scanner && video && !ui.cameraEnPanne) {
+    void demarrerScan(
+      video,
+      (texte) => {
+        if (importerSalle(texte)) ui.scanner = false;
+        afficher();
+      },
+      (message) => {
+        ui.cameraEnPanne = true;
+        ui.erreur = message;
+        afficher();
+      },
+    );
   }
 }
 
@@ -696,6 +767,7 @@ function valider(): void {
 }
 
 app.addEventListener('click', (evt) => {
+  if (clicApresDeplacement()) return; // fin d'un glisser de siège, pas un clic
   const el = (evt.target as HTMLElement).closest<HTMLElement>('button');
   if (!el || el.hasAttribute('disabled')) return;
   const d = el.dataset;
@@ -708,22 +780,54 @@ app.addEventListener('click', (evt) => {
     return afficher();
   }
 
+  // Partage d'une salle (QR code) et scanner
+  if (d.partager !== undefined) {
+    ui.partage = plansPerso.find((p) => p.salle === ui.salle && p.nbJoueurs === ui.nbJoueurs) ?? null;
+    ui.info = null;
+    return afficher();
+  }
+  if (d.fermerPartage !== undefined) {
+    ui.partage = null;
+    ui.info = null;
+    return afficher();
+  }
+  if (d.copierLien !== undefined && ui.partage) {
+    const lien = lienDePartage(ui.partage);
+    navigator.clipboard
+      ?.writeText(lien)
+      .then(() => (ui.info = 'Lien copié : envoie-le à la tablette (message, mail…).'))
+      .catch(() => (ui.info = `Copie impossible. Le lien : ${lien}`))
+      .finally(afficher);
+    return;
+  }
+  if (d.scanner !== undefined) {
+    ui.scanner = true;
+    ui.cameraEnPanne = false;
+    ui.erreur = null;
+    ui.info = null;
+    return afficher();
+  }
+  if (d.fermerScanner !== undefined) {
+    ui.scanner = false;
+    ui.erreur = null;
+    return afficher();
+  }
+  if (d.importerLien !== undefined) {
+    const lien = app.querySelector<HTMLInputElement>('[data-lien-salle]')?.value ?? '';
+    if (importerSalle(lien)) ui.scanner = false;
+    return afficher();
+  }
+
   // Générateur de salle
   if (ui.generateur) {
     const resultat = clicGenerateur(ui.generateur, d);
-    if (resultat?.type === 'enregistrer') {
-      const { plan } = resultat;
-      plansPerso = [...plansPerso.filter((p) => p.id !== plan.id), plan];
-      ecrirePlansPerso();
-      ui.salle = plan.salle;
-      ui.nbJoueurs = plan.nbJoueurs;
-      ui.prenoms = [];
-    }
+    if (resultat?.type === 'enregistrer') ajouterPlanPerso(resultat.plan);
     if (resultat) ui.generateur = null;
     return afficher();
   }
 
   // Écran de choix
+  if (!ui.etat) ui.info = null;
   if (d.ouvrirGenerateur !== undefined) {
     ui.generateur = nouveauGenerateur();
   } else if (d.supprimerPlan !== undefined) {
@@ -808,6 +912,12 @@ app.addEventListener('click', (evt) => {
   afficher();
 });
 
+// Générateur : appui long sur un siège puis glisser pour le placer.
+activerDeplacement(app, (numero, position) => {
+  if (ui.generateur && position) deplacerDansGenerateur(ui.generateur, numero, position);
+  afficher();
+});
+
 app.addEventListener('input', (evt) => {
   const el = evt.target as HTMLInputElement;
   if (el.dataset.prenom !== undefined) ui.prenoms[Number(el.dataset.prenom)] = el.value;
@@ -834,6 +944,14 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   });
 }
 
+/** Lien de partage ouvert directement (QR code scanné avec l'appareil photo) : on ajoute la salle. */
+function importerDepuisLien(): void {
+  if (!new RegExp(`[#?&]${PARAM_PARTAGE}=`).test(location.hash)) return;
+  importerSalle(location.hash);
+  history.replaceState(null, '', location.pathname + location.search);
+}
+
 restaurer();
+importerDepuisLien();
 afficher();
 void garderEcranAllume();
