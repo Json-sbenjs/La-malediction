@@ -39,7 +39,7 @@ Chemins : `Oculus/` = `Meta-open-sound/corpora/oculus-audio-pack/ogg/`, `FreeSFX
 
 | Son de l'appli | Base proposée | Autre choix |
 |---|---|---|
-| musique (3 au choix) | **freepd.com** « Night Vigil » (par défaut) et « Burt's Requiem » (domaine public), **HoliznaCC0** « WitchCraft » (CC0) : sombres, en mineur | écartées : « Retro Synths » (trop joyeuse) ; « Lament for a Warrior's Soul », Requiem / Dies Irae de stripedgazelle, « Gothic » de SUPERARE, « Catacombae » (licence pas vérifiable à la source) |
+| musique (4 au choix) | **freepd.com** « Creepy Hallow » (par défaut), « Evil Incoming », « Burt's Requiem » (domaine public), **HoliznaCC0** « Haunted Houses » (CC0) : lentes (40–46 BPM), en mineur, son grave ; aigus étouffés à 4 kHz | écartées : « Retro Synths », « Night Vigil », « WitchCraft » (pas assez sombres) ; « Lament for a Warrior's Soul », Requiem / Dies Irae de stripedgazelle, « Gothic » de SUPERARE, « Catacombae » (licence pas vérifiable à la source) |
 | `amb_nuit` | `Oculus/AMBForst_Night_LOOP_01.ogg` (forêt la nuit) | + `Oculus/DSGNDron_DroneCreepy_OS_01.ogg` en dessous |
 | `amb_jour` | `Oculus/WINDVege_LightWindTreesBirds_LOOP_01.ogg` | `Oculus/AMBForst_Forest_LOOP_01.ogg` |
 

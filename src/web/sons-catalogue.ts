@@ -32,9 +32,10 @@ const son = (dossier: string, id: string, canal: Canal, description: string, bou
 const SONS_FIXES = {
   // Musique et ambiances (en boucle)
   // Musiques de fond d'origine, au choix du MJ (remplaçables par son propre fichier)
-  musique_veillee: son('musique', 'musique_veillee', 'musique', "« Night Vigil » (freepd.com) : orchestre sombre en la mineur, boucle de 96 s.", 96),
-  musique_requiem: son('musique', 'musique_requiem', 'musique', "« Burt's Requiem » (freepd.com) : requiem lent et grave en sol mineur, boucle de 96 s.", 96),
-  musique_sorcellerie: son('musique', 'musique_sorcellerie', 'musique', "« WitchCraft » (HoliznaCC0) : ambiance de sorcellerie en do mineur, boucle de 96 s.", 96),
+  musique_creux: son('musique', 'musique_creux', 'musique', "« Creepy Hallow » (freepd.com) : lent et inquiétant, la mineur, aigus étouffés, boucle de 96 s.", 96),
+  musique_malefique: son('musique', 'musique_malefique', 'musique', "« Evil Incoming » (freepd.com) : menace qui monte, la mineur, aigus étouffés, boucle de 96 s.", 96),
+  musique_hantee: son('musique', 'musique_hantee', 'musique', "« Haunted Houses » (HoliznaCC0) : maison hantée, fa mineur, aigus étouffés, boucle de 96 s.", 96),
+  musique_requiem: son('musique', 'musique_requiem', 'musique', "« Burt's Requiem » (freepd.com) : requiem lent et grave en sol mineur, aigus étouffés, boucle de 96 s.", 96),
   amb_nuit: son('ambiance', 'amb_nuit', 'ambiance', "Nuit : forêt de nuit (insectes, bruissements) et drone inquiétant en dessous.", 44),
   amb_jour: son('ambiance', 'amb_jour', 'ambiance', "Jour : vent léger dans les arbres, oiseaux.", 70),
 
@@ -119,9 +120,10 @@ export type IdSon = keyof typeof SONS_FIXES | IdSonRole;
 
 /** Musiques de fond d'origine, dans l'ordre du choix proposé au MJ (la première est celle par défaut). */
 export const MORCEAUX = [
-  { id: 'musique_veillee', titre: 'Night Vigil', auteur: 'freepd.com' },
+  { id: 'musique_creux', titre: 'Creepy Hallow', auteur: 'freepd.com' },
+  { id: 'musique_malefique', titre: 'Evil Incoming', auteur: 'freepd.com' },
+  { id: 'musique_hantee', titre: 'Haunted Houses', auteur: 'HoliznaCC0' },
   { id: 'musique_requiem', titre: "Burt's Requiem", auteur: 'freepd.com' },
-  { id: 'musique_sorcellerie', titre: 'WitchCraft', auteur: 'HoliznaCC0' },
 ] as const satisfies readonly { id: IdSon; titre: string; auteur: string }[];
 
 export type IdMorceau = (typeof MORCEAUX)[number]['id'];

@@ -19,9 +19,10 @@ sous le tableau doit accompagner l'appli.
 | Owl Hoot | Breviceps | [source](https://freesound.org/s/465697/) | CC0 1.0 | oui (coupé, volume) | `tr_nuit_tombe` |
 | Hunt Horn | Countrychap999 | [source](https://freesound.org/s/69206/) | CC0 1.0 | oui (coupé, volume) | `role_alpha` |
 | Burt's Requiem | freepd.com | [source](https://freepd.com/) | CC0 1.0 | oui (coupé, volume) | `musique_requiem` |
-| Night Vigil | freepd.com | [source](https://freepd.com/) | CC0 1.0 | oui (coupé, volume) | `musique_veillee` |
+| Creepy Hallow | freepd.com | [source](https://freepd.com/) | CC0 1.0 | oui (coupé, volume) | `musique_creux` |
+| Evil Incoming | freepd.com | [source](https://freepd.com/) | CC0 1.0 | oui (coupé, volume) | `musique_malefique` |
 | Crow | fvcalderan (OpenGameArt) | [source](https://opengameart.org/content/crow) | CC0 1.0 | oui (coupé, volume) | `role_augure` |
-| WitchCraft | HoliznaCC0 | [source](https://freemusicarchive.org/music/holiznacc0/) | CC0 1.0 | oui (coupé, volume) | `musique_sorcellerie` |
+| Haunted Houses | HoliznaCC0 | [source](https://freemusicarchive.org/music/holiznacc0/) | CC0 1.0 | oui (coupé, volume) | `musique_hantee` |
 | Nun singing and playing organ, distant, spooky, ethereal | jackjewers | [source](https://freesound.org/s/240208/) | CC0 1.0 | oui (coupé, volume) | `role_sectaire` |
 | Magic Spell SFX — magical_1 | JaggedStone (OpenGameArt) | [source](https://opengameart.org/content/magic-spell-sfx) | CC0 1.0 | oui (coupé, volume) | `role_enchanteur` |
 | RPG Audio — book_close | Kenney (kenney.nl) | [source](https://github.com/Boyquotes/kenney-rpg-audio-for-godot) | CC0 1.0 | oui (coupé, volume) | `role_inquisiteur` |

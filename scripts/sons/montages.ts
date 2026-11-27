@@ -36,6 +36,9 @@ export interface Montage {
   niveau?: number;
 }
 
+/** Fréquence au-dessus de laquelle on étouffe les musiques de fond (Hz). */
+const SOMBRE = 4000;
+
 const c = (source: IdSource, options: Omit<Couche, 'source'> = {}): Couche => ({ source, ...options });
 
 /** Une suite de notes jouées l'une après l'autre (arpège). */
@@ -45,9 +48,11 @@ const arpege = (notes: IdSource[], ecart: number, duree: number, gain = 1): Couc
 export const MONTAGES: Record<IdSon, Montage> = {
   // ── Musique et ambiances (en boucle) ──
   // Musiques : la section la plus stable de chaque morceau (repérée au volume), boucle de 96 s + 4 s de fondu.
-  musique_veillee: { couches: [c('nightVigil', { depuis: 80, duree: 100 })], fondu: 4 },
-  musique_requiem: { couches: [c('burtsRequiem', { depuis: 20, duree: 100 })], fondu: 4 },
-  musique_sorcellerie: { couches: [c('witchCraft', { depuis: 14, duree: 100 })], fondu: 4 },
+  // Aigus coupés au-dessus de SOMBRE Hz : son étouffé, plus sombre (demande du MJ).
+  musique_creux: { couches: [c('creepyHallow', { depuis: 16, duree: 100, passeBas: SOMBRE })], fondu: 4 },
+  musique_malefique: { couches: [c('evilIncoming', { depuis: 40, duree: 100, passeBas: SOMBRE })], fondu: 4 },
+  musique_hantee: { couches: [c('hauntedHouses', { depuis: 12, duree: 100, passeBas: SOMBRE })], fondu: 4 },
+  musique_requiem: { couches: [c('burtsRequiem', { depuis: 20, duree: 100, passeBas: SOMBRE })], fondu: 4 },
   amb_nuit: {
     couches: [c('foretNuit', { enBoucle: true, duree: 48 }), c('droneCreepy2', { depuis: 4, duree: 48, gain: 0.35 })],
     fondu: 4,

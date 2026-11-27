@@ -397,13 +397,13 @@ function carteSons(): string {
       <p class="note">${
         r.musiquePerso
           ? `Ta musique : <strong>${echapper(r.musiquePerso)}</strong>`
-          : "Trois musiques sombres au choix. Tu peux aussi mettre un fichier de la tablette (MP3, M4A…) : il reste sur cet appareil."
+          : "Quatre musiques sombres au choix. Tu peux aussi mettre un fichier de la tablette (MP3, M4A…) : il reste sur cet appareil."
       }</p>
       <div class="choix-ligne">
         <label class="bouton-fichier">🎵 Choisir ma musique<input type="file" accept="audio/*" data-musique-fichier hidden></label>
       </div>
-      <p class="credits-sons">Musiques : « Night Vigil » et « Burt's Requiem » (freepd.com, domaine public), « WitchCraft »
-        de HoliznaCC0 (CC0). Sons : « Oculus Audio Pack 01 » d'Oculus VR, LLC, sous licence CC BY 4.0, et sons libres CC0 de
+      <p class="credits-sons">Musiques : « Creepy Hallow », « Evil Incoming » et « Burt's Requiem » (freepd.com, domaine
+        public), « Haunted Houses » de HoliznaCC0 (CC0). Sons : « Oculus Audio Pack 01 » d'Oculus VR, LLC, sous licence CC BY 4.0, et sons libres CC0 de
         Freesound, OpenGameArt, Kenney et Meta (liste dans CREDITS.md).</p>
     </section>`;
 }

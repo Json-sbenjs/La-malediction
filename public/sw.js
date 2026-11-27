@@ -1,6 +1,6 @@
 // Service worker : l'appli continue de marcher sans réseau (salle sans Wi-Fi).
 // Stratégie : réseau d'abord, et on garde une copie ; sans réseau, on sert la copie.
-const CACHE = 'malediction-v5';
+const CACHE = 'malediction-v6';
 // Page, icônes, blason et illustrations des cartes : tout est là dès la première visite.
 const BASE = [
   './', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './blason.webp',
@@ -14,7 +14,8 @@ const BASE = [
 ];
 // Sons (public/sons, liste vérifiée par tests/web/sons-fichiers.test.ts) : la partie se joue sans réseau.
 const SONS = [
-  './sons/musique/musique_requiem.mp3', './sons/musique/musique_sorcellerie.mp3', './sons/musique/musique_veillee.mp3',
+  './sons/musique/musique_creux.mp3', './sons/musique/musique_hantee.mp3', './sons/musique/musique_malefique.mp3',
+  './sons/musique/musique_requiem.mp3',
   './sons/ambiance/amb_jour.mp3', './sons/ambiance/amb_nuit.mp3',
   './sons/ui/ui_annuler.mp3', './sons/ui/ui_clic.mp3', './sons/ui/ui_deselection.mp3', './sons/ui/ui_erreur.mp3',
   './sons/ui/ui_glisser.mp3', './sons/ui/ui_selection.mp3', './sons/ui/ui_succes.mp3', './sons/ui/ui_tirage.mp3',

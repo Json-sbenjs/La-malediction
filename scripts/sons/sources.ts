@@ -74,14 +74,15 @@ const musiqueCC0 = (chemin: string, titre: string, auteur: string, page: string)
 export const SOURCES = {
   // Musique
   // Musiques (sombres, en mineur). freepd.com : tout son catalogue est dans le domaine public.
-  nightVigil: musiqueCC0('freepd.com/Night Vigil.mp3', 'Night Vigil', 'freepd.com', 'https://freepd.com/'),
-  burtsRequiem: musiqueCC0("freepd.com/Burt's Requiem.mp3", "Burt's Requiem", 'freepd.com', 'https://freepd.com/'),
-  witchCraft: musiqueCC0(
-    'freemusicarchive.org/HoliznaCC0 - WitchCraft.mp3',
-    'WitchCraft',
+  creepyHallow: musiqueCC0('freepd.com/Creepy Hallow.mp3', 'Creepy Hallow', 'freepd.com', 'https://freepd.com/'),
+  evilIncoming: musiqueCC0('freepd.com/Evil Incoming.mp3', 'Evil Incoming', 'freepd.com', 'https://freepd.com/'),
+  hauntedHouses: musiqueCC0(
+    'freemusicarchive.org/HoliznaCC0 - Haunted Houses.mp3',
+    'Haunted Houses',
     'HoliznaCC0',
     'https://freemusicarchive.org/music/holiznacc0/',
   ),
+  burtsRequiem: musiqueCC0("freepd.com/Burt's Requiem.mp3", "Burt's Requiem", 'freepd.com', 'https://freepd.com/'),
 
   // Ambiances
   foretNuit: oculus('AMBForst_Night_LOOP_01'),
