@@ -2,12 +2,14 @@
 
 ## Sons
 
-Tous les fichiers de `public/sons/` sont des **créations originales du projet**, synthétisées par le code de
-`scripts/sons/` (aucun échantillon extérieur). Ils suivent la licence du dépôt. Détail de chaque son : `docs/sons.md`.
+Pour l'instant, tous les fichiers de `public/sons/` sont des **créations originales du projet**, synthétisées par le code
+de `scripts/sons/` (aucun échantillon extérieur). Ils suivent la licence du dépôt. Détail de chaque son : `docs/sons.md`.
+Ils seront remplacés au fur et à mesure par des sons faits à partir de bases libres (`docs/sons-sources.md`) : chacun sera
+ajouté au tableau ci-dessous.
 
 | Son | Auteur | Source | Licence | Modifié |
 |---|---|---|---|---|
-| tous (`public/sons/**`) | projet La Malédiction | `npm run sons` | celle du dépôt | non |
+| tous (`public/sons/**`) pour l'instant | projet La Malédiction | `npm run sons` | celle du dépôt | non |
 
 ## Musique choisie par le MJ
 

@@ -38,6 +38,13 @@ https://www.figma.com/board/xRPHkwHb3IT2knM3Vhf3ff
 - `ancien-code` : l'ancienne version. Elle sert **de référence** (comparer, retrouver une idée), pas de base de travail.
   Pour lire un ancien fichier : `git show ancien-code:chemin/du/fichier`
 
+## Sons
+
+- **On part toujours d'une base** : un son existant libre de droits (CC0 de préférence, CC BY avec crédit). Ne pas générer
+  de sons de zéro. Bases repérées : `docs/sons-sources.md` ; marche à suivre : `docs/sons.md`.
+- Chaque son venu d'ailleurs est noté dans `CREDITS.md` (titre, auteur, URL, licence, modifié oui / non).
+- Jamais de musique du commerce dans le dépôt (elle serait publiée sur GitHub Pages).
+
 ## Stack
 
 - TypeScript strict, Node 20+ pour le terminal et les tests.

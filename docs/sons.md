@@ -5,8 +5,11 @@ et un retour sonore sur chaque bouton. Ils ne changent aucune règle du jeu, seu
 
 ## Principes
 
-- **Tout est synthétisé par le code** (`scripts/sons/`), sans échantillon extérieur : aucune licence à gérer, aucun crédit
-  à donner (voir `CREDITS.md`). On peut tout régénérer à l'identique.
+- **Règle (27/11/2026) : on part toujours d'une base.** Un nouveau son, ou un son qu'on refait, part d'un son existant
+  libre de droits (CC0 de préférence, CC BY avec crédit), qu'on choisit, coupe et mixe. On ne génère plus de sons de zéro.
+  Les bases repérées et une proposition pour chaque son sont dans `docs/sons-sources.md`.
+- **Les sons actuels** ont été synthétisés par le code (`scripts/sons/`) avant cette règle. Ils restent en place en
+  attendant d'être remplacés par des sons faits à partir d'une base.
 - **La musique de fond est remplaçable par le MJ** : écran d'accueil → *Sons* → *Choisir ma musique*. Le fichier
   (par exemple « Intro » de John Carpenter, Cody Carpenter et Daniel Davies, acheté par le MJ) reste **sur la tablette**
   (IndexedDB). Il n'est jamais mis dans le dépôt ni sur le site publié : c'est une œuvre protégée par le droit d'auteur.
@@ -124,7 +127,15 @@ trou.
 
 ## Changer ou ajouter un son
 
-Il faut Node 20+ et **ffmpeg** (`sudo apt install ffmpeg`, ou `brew install ffmpeg`).
+**Cas normal : à partir d'une base** (voir `docs/sons-sources.md`).
+
+1. Choisir la base, vérifier sa licence et la noter dans `CREDITS.md`.
+2. La couper, la mixer et l'exporter en MP3 au nom du catalogue, dans `public/sons/` (Audacity ou ffmpeg) ; viser le même
+   volume perçu que les autres sons du même canal.
+3. Retirer sa recette de `scripts/sons/recettes.ts`, pour qu'un `npm run sons` ne l'écrase pas.
+4. Mettre à jour la feuille de sons ci-dessus, puis lancer `npm test` et `npm run build`.
+
+**Ancien cas : sons synthétisés** (sons pas encore remplacés). Il faut Node 20+ et **ffmpeg** (`sudo apt install ffmpeg`, ou `brew install ffmpeg`).
 
 1. Ajouter (ou modifier) l'entrée dans `src/web/sons-catalogue.ts`, et sa recette dans `scripts/sons/recettes.ts`.
 2. Générer seulement ce son :
@@ -143,6 +154,3 @@ Il faut Node 20+ et **ffmpeg** (`sudo apt install ffmpeg`, ou `brew install ffmp
 4. Le déclencher depuis `sons-evenements.ts` (événement de la partie) ou `main.ts` (bouton), et ajouter un test.
 5. Mettre à jour la feuille de sons ci-dessus, puis lancer `npm test` et `npm run build`.
 
-**Remplacer un son par un enregistrement** (Audacity, banque de sons) : l'exporter en MP3 au même nom et au même endroit,
-noter la source et la licence dans `CREDITS.md` (pas de licence « NC » si le projet peut être vendu), et retirer sa recette
-pour qu'un `npm run sons` ne l'écrase pas.
