@@ -172,6 +172,7 @@ button:disabled { opacity: 0.4; cursor: default; }
   cursor: pointer;
 }
 .bouton-fichier:focus-within { outline: 3px solid var(--or-vif); outline-offset: 2px; }
+.credits-sons { margin: 0; font-size: 15px; color: var(--encre-douce); }
 @media (max-width: 480px) {
   .volume { grid-template-columns: 1fr; gap: 0; }
 }

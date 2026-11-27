@@ -399,6 +399,8 @@ function carteSons(): string {
         <label class="bouton-fichier">🎵 Choisir ma musique<input type="file" accept="audio/*" data-musique-fichier hidden></label>
         ${r.musiquePerso ? bouton("Musique d'origine", 'data-musique-origine', 'discret') : ''}
       </div>
+      <p class="credits-sons">Musique : « Retro Synths » de HoliznaCC0 (CC0). Sons : « Oculus Audio Pack 01 » d'Oculus VR, LLC,
+        sous licence CC BY 4.0, et sons libres CC0 de Freesound, OpenGameArt, Kenney et Meta (liste dans CREDITS.md).</p>
     </section>`;
 }
 

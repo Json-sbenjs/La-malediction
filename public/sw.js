@@ -1,6 +1,6 @@
 // Service worker : l'appli continue de marcher sans réseau (salle sans Wi-Fi).
 // Stratégie : réseau d'abord, et on garde une copie ; sans réseau, on sert la copie.
-const CACHE = 'malediction-v3';
+const CACHE = 'malediction-v4';
 // Page, icônes, blason et illustrations des cartes : tout est là dès la première visite.
 const BASE = [
   './', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './blason.webp',

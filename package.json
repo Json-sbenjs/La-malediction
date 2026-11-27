@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "sons": "node scripts/sons/generer.ts"
+    "sons": "node scripts/sons/assembler.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

@@ -23,7 +23,7 @@ npm test
 | `npm run dev` | lance l'interface web en local (Vite) |
 | `npm run build` | vérifie les types (`tsc`) puis construit l'appli dans `dist/` |
 | `npm run preview` | sert la version construite |
-| `npm run sons` | régénère les sons de `public/sons/` (il faut ffmpeg, voir `docs/sons.md`) |
+| `npm run sons` | remonte les sons de `public/sons/` à partir des bases libres (il faut ffmpeg, voir `docs/sons.md`) |
 
 ### Sur l'iPad
 
@@ -75,7 +75,7 @@ tests/
     ├── partie-complete.test.ts   ★ jalon : une partie du début à la victoire
     └── purete.test.ts   vérifie que le moteur reste pur
 └── web/             tests de l'interface sans navigateur (sons)
-scripts/sons/        générateur des sons (synthèse en TypeScript → MP3)
+scripts/sons/        montage des sons à partir de bases libres de droits → MP3
 public/              manifeste, service worker (hors ligne), icônes, sons
 asset/               planche des cartes (PDF)
 ```
@@ -120,7 +120,8 @@ Après la deadline : terminal de test. (Historique et annulation, les autres rô
 ## Sons
 
 Musique de fond, ambiances nuit / jour, un son de réveil par rôle, un son par événement (morts, vote, Alpha, fin)
-et un retour sonore sur chaque bouton. Tout est synthétisé par `scripts/sons/` : aucune licence à gérer.
+et un retour sonore sur chaque bouton. Chaque son est monté à partir de bases libres de droits (CC0, et CC BY avec crédit) :
+sources et licences dans `scripts/sons/sources.ts` et `CREDITS.md`.
 Le MJ peut remplacer la musique de fond par son propre fichier (écran d'accueil → *Sons*) ; ce fichier reste sur la tablette.
 Détails, feuille de sons et marche à suivre pour changer un son : `docs/sons.md`.
 

@@ -3,6 +3,8 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SONS, TOUS_LES_SONS } from '../../src/web/sons-catalogue';
+import { MONTAGES } from '../../scripts/sons/montages';
+import { SOURCES } from '../../scripts/sons/sources';
 
 const PUBLIC = join(import.meta.dirname, '../../public');
 
@@ -33,5 +35,23 @@ describe('fichiers de sons', () => {
 
   it('les sons en boucle ont une longueur de boucle', () => {
     for (const id of ['musique_fond', 'amb_nuit', 'amb_jour'] as const) expect(SONS[id].boucle).toBeGreaterThan(0);
+  });
+
+  it('chaque son est monté à partir de bases déclarées, sous licence libre', () => {
+    for (const id of TOUS_LES_SONS) {
+      expect(MONTAGES[id].couches.length, id).toBeGreaterThan(0);
+      for (const couche of MONTAGES[id].couches) {
+        expect(SOURCES[couche.source], `${id} → ${couche.source}`).toBeDefined();
+        expect(['CC0 1.0', 'CC BY 4.0']).toContain(SOURCES[couche.source].licence);
+      }
+    }
+  });
+
+  it('chaque base utilisée est créditée dans CREDITS.md (relancer npm run sons sinon)', () => {
+    const credits = readFileSync(join(import.meta.dirname, '../../CREDITS.md'), 'utf8');
+    const oublies = [...new Set(TOUS_LES_SONS.flatMap((id) => MONTAGES[id].couches.map((c) => c.source)))].filter(
+      (source) => !credits.includes(`| ${SOURCES[source].titre} | ${SOURCES[source].auteur} |`),
+    );
+    expect(oublies).toEqual([]);
   });
 });

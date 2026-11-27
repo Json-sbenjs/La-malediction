@@ -1,8 +1,13 @@
 # Sources de sons libres de droits
 
-Recherche du 27/11/2026 sur GitHub : dépôts de sons libres qui collent au thème (horreur médiévale, nuit, spectres).
+Recherche du 27/11/2026 : dépôts et sites de sons libres qui collent au thème (horreur médiévale, nuit, spectres).
 Règle du projet : **on part toujours d'un son existant** (une « base ») qu'on choisit, coupe et mixe ; on ne génère plus
 de sons de zéro (voir `docs/sons.md`).
+
+**Intégré le 27/11/2026** : les bases réellement utilisées, avec leur licence vérifiée, sont dans `scripts/sons/sources.ts`
+et `CREDITS.md`. Les 4 manques de la recherche GitHub ont été comblés sur Freesound (CC0) : glas (« funeral bell-cloche
+funèbre », aoristos), sifflement de serpent (« Snake Hiss », xoiziox), cor de chasse (« Hunt Horn », Countrychap999), et la
+Trinité est faite de trois notes du piano Meta (CC0). Ce document garde la recherche et les autres pistes.
 
 Avant d'intégrer un fichier : **vérifier la licence** dans le dépôt source, puis noter titre, auteur, URL, licence et
 « modifié oui / non » dans `CREDITS.md`. Pas de licence « NC » (non commerciale) ni « SA » (partage à l'identique) sans
@@ -17,6 +22,7 @@ en parler d'abord.
 | [EternityForest/Free-SFX](https://github.com/EternityForest/Free-SFX) | **CC0** (racine) ; vérifier le README de chaque sous-dossier | ~1 100 sons en `.opus` : hululement de chouette, gémissements de fantôme (qubodup), marais, grillons, « horror sting », sorts magiques, pas, tissus | non (CC0) |
 | [Boyquotes/kenney-rpg-audio-for-godot](https://github.com/Boyquotes/kenney-rpg-audio-for-godot) | **CC0** (pack « RPG Audio » de Kenney) | livres (ouvrir, feuilleter, poser), tissus, portes, grincements, couteau tiré, hache (« chop »), pièces, pas | non |
 | [zuujis-cc0/opengameart-sound-effect](https://github.com/zuujis-cc0/opengameart-sound-effect) | **CC0** (copie d'OpenGameArt) | corbeau (`crow/crow_0.ogg`), pluie en boucle, cigales, 150 sons de combat | non |
+| [Freesound](https://freesound.org) (filtre de licence « Creative Commons 0 ») | **CC0** (vérifier chaque son sur sa page) | énorme banque : cloches, animaux, voix, ambiances ; l'aperçu MP3 « hq » est téléchargeable sans compte | non (CC0) |
 | [SoundSafari/CC0-1.0-Music](https://github.com/SoundSafari/CC0-1.0-Music) | **CC0** (corpus de ~7 000 morceaux du domaine public) | musique : **HoliznaCC0** (« Retro Synths », « Retro Soundtrack », « SomeWhere In The Dark », « Haunted Houses », « Halloween Soundscape »), **freepd.com** (« Cursed Intro », « Night in the Castle », « Dark Hallway », « Night Vigil », « Black Knight »), John Bartmann (« ominous-night », « murky-midnight ») ; sons Freesound CC0 (chœur de cathédrale, orgue, battement de cœur) | non, mais vérifier chaque morceau sur le site d'origine (le dépôt accepte les demandes de retrait) |
 
 Écartés : [effacestudios/Royalty-Free-Music-Pack](https://github.com/effacestudios/Royalty-Free-Music-Pack) (style
