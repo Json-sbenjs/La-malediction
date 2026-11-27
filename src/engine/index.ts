@@ -59,6 +59,7 @@ export function appliquer(etat: EtatPartie, action: Action): EtatPartie {
 export {
   FORMES,
   compositionConseillee,
+  deplacerSiege,
   echangerRoles,
   genererPlan,
   maxJoueursPossible,
@@ -67,4 +68,5 @@ export {
   type Forme,
 } from './generateur';
 export { MIN_JOUEURS } from './plans';
+export { PARAM_PARTAGE, decoderPlan, encoderPlan } from './partage';
 export { LIMITE_HISTORIQUE, annuler, memoriser, type Historique } from './historique';

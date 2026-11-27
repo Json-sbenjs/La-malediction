@@ -5,6 +5,7 @@ import {
   MIN_JOUEURS,
   ROLES,
   compositionConseillee,
+  deplacerSiege,
   echangerRoles,
   genererPlan,
   maxJoueursPossible,
@@ -23,6 +24,11 @@ export interface EtatGenerateur {
   forme: Forme;
   composition: Composition;
   plan: Plan | null;
+  /**
+   * Positions des sièges déplacés à la main (dans l'ordre des sièges).
+   * Un nouveau tirage les garde ; changer la forme ou le nombre de joueurs les oublie.
+   */
+  positions: Plan['sieges'][number]['position'][] | null;
   /** Premier siège touché pour un échange de rôles. */
   siegeChoisi: number | null;
   erreur: string | null;
@@ -35,6 +41,7 @@ export function nouveauGenerateur(): EtatGenerateur {
     forme: 'ovale',
     composition: compositionConseillee(10),
     plan: null,
+    positions: null,
     siegeChoisi: null,
     erreur: null,
   };
@@ -79,8 +86,8 @@ function apercu(plan: Plan, choisi: number | null): string {
     .map(
       (s) => `
       <button type="button" class="siege actif camp-${ROLES[s.role].camp} ${choisi === s.numero ? 'choisi' : ''}"
-        data-gen-siege="${s.numero}" style="--x:${s.position.x};--y:${s.position.y}">
-        <img class="vignette" src="${import.meta.env.BASE_URL}roles/${s.role}.webp" alt="" ${SI_PAS_D_IMAGE}>
+        data-gen-siege="${s.numero}" data-deplacable style="--x:${s.position.x};--y:${s.position.y}">
+        <img class="vignette" src="${import.meta.env.BASE_URL}roles/${s.role}.webp" alt="" draggable="false" ${SI_PAS_D_IMAGE}>
         <span class="num">${s.numero}</span>
         <span class="role">${echapper(ROLES[s.role].nom)}</span>
       </button>`,
@@ -130,7 +137,7 @@ export function ecranGenerateur(g: EtatGenerateur): string {
         ${juste ? '' : `<p class="attention">Il faut autant de rôles que de joueurs.</p>`}
         ${
           g.plan
-            ? `<p>Touche deux sièges pour échanger leurs rôles.</p>
+            ? `<p>Touche deux sièges pour échanger leurs rôles. Reste appuyé sur un siège pour le déplacer et le placer comme dans la vraie salle.</p>
                ${apercu(g.plan, g.siegeChoisi)}`
             : ''
         }
@@ -154,8 +161,10 @@ export function clicGenerateur(g: EtatGenerateur, d: DOMStringMap): ResultatClic
     g.nbJoueurs = Math.min(maxJoueursPossible(), Math.max(MIN_JOUEURS, g.nbJoueurs + Number(d.genNb)));
     g.composition = compositionConseillee(g.nbJoueurs);
     g.plan = null;
+    g.positions = null;
   } else if (d.genForme !== undefined) {
     g.forme = d.genForme as Forme;
+    g.positions = null; // nouvelle forme : on repart de sa disposition
     if (g.plan) g.plan = tirer(g);
   } else if (d.genPlus !== undefined) {
     const role = d.genPlus as RoleId;
@@ -192,9 +201,21 @@ export function clicGenerateur(g: EtatGenerateur, d: DOMStringMap): ResultatClic
 /** Tire les rôles ; on garde un nom provisoire tant que la salle n'est pas nommée. */
 function tirer(g: EtatGenerateur): Plan | null {
   try {
-    return genererPlan({ salle: g.salle.trim() || 'Sans nom', forme: g.forme, composition: g.composition });
+    return genererPlan({
+      salle: g.salle.trim() || 'Sans nom',
+      forme: g.forme,
+      composition: g.composition,
+      positions: g.positions ?? undefined,
+    });
   } catch (e) {
     g.erreur = e instanceof Error ? e.message : String(e);
     return null;
   }
+}
+
+/** Le MJ a lâché un siège à un nouvel endroit : on le garde pour les prochains tirages. */
+export function deplacerDansGenerateur(g: EtatGenerateur, numero: number, position: { x: number; y: number }): void {
+  if (!g.plan) return;
+  g.plan = deplacerSiege(g.plan, numero, position);
+  g.positions = g.plan.sieges.map((s) => s.position);
 }
