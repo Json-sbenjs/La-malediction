@@ -223,7 +223,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .siege .num { font-weight: 700; font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
 .siege .nom { font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .siege .role { color: var(--encre-douce); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.siege .badges { font-size: 0.95em; line-height: 1; }
+.siege .badges { font-size: 14px; line-height: 1; }
 .siege .badges:empty, .siege .nom:empty { display: none; }
 .siege .fleche, .siege .voix {
   position: absolute;
@@ -260,7 +260,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .salle.tres-dense .siege .num { grid-area: n; font-size: 16px; }
 .salle.tres-dense .siege .nom, .salle.tres-dense .siege .role { grid-area: l; }
 .salle.tres-dense .siege .nom:not(:empty) + .role { display: none; }
-.salle.tres-dense .siege .badges { grid-area: b; }
+.salle.tres-dense .siege .badges { grid-area: b; font-size: 1em; }
 
 .siege.camp-pelerins { border-color: var(--or); }
 .siege.camp-spectres { border-color: var(--sang); }
