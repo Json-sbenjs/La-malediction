@@ -253,7 +253,8 @@ button:disabled { opacity: 0.4; cursor: default; }
   justify-items: center;
   align-items: center;
   column-gap: 3px;
-  font-size: clamp(9px, 1.4cqi, 12px);
+  /* Exception à la charte (14px minimum) : à 16 joueurs et plus, la légende descend jusqu'à 11px. */
+  font-size: clamp(11px, 1.4cqi, 12px);
 }
 .salle.tres-dense .siege .vignette { grid-area: v; width: 2.6cqi; height: 2.6cqi; }
 .salle.tres-dense .siege .num { grid-area: n; font-size: 16px; }
