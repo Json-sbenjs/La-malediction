@@ -60,6 +60,8 @@ interface Graphe {
   ctx: AudioContext;
   maitre: GainNode;
   bus: Record<Canal, GainNode>;
+  /** Fondu de la musique selon la phase (coupée le jour), après le réglage de volume du MJ. */
+  phaseMusique: GainNode;
 }
 
 let graphe: Graphe | null = null;
@@ -77,6 +79,8 @@ let ambiance: Boucle | null = null;
 let musique: Boucle | null = null;
 /** Ambiance voulue par l'écran (appliquée dès que le son est débloqué). */
 let ambianceVoulue: IdSon | null = null;
+/** La musique doit-elle s'entendre ? (non le jour : voir musiqueDe dans sons-evenements.ts) */
+let musiqueVoulue = true;
 /** Sources du dernier lot d'effets : un nouveau lot les coupe (on ne superpose pas deux réveils). */
 let lotEnCours: AudioBufferSourceNode[] = [];
 /** Nombre de sons demandés : main.ts s'en sert pour savoir si un clic a déjà son propre son. */
@@ -136,7 +140,13 @@ export function debloquerAudio(): void {
       bus[canal] = ctx.createGain();
       bus[canal].connect(maitre);
     }
-    graphe = { ctx, maitre, bus };
+    // Musique : bus → fondu de phase → maître.
+    const phaseMusique = ctx.createGain();
+    phaseMusique.gain.value = musiqueVoulue ? 1 : 0;
+    bus.musique.disconnect();
+    bus.musique.connect(phaseMusique);
+    phaseMusique.connect(maitre);
+    graphe = { ctx, maitre, bus, phaseMusique };
     appliquerVolumes();
     // Les sons d'interface sont préchargés : ils doivent répondre tout de suite.
     for (const id of Object.keys(SONS) as IdSon[]) if (id.startsWith('ui_')) void charger(id).catch(() => {});
@@ -240,6 +250,13 @@ function eteindre(boucle: Boucle | null): void {
     boucle.arreter();
     boucle.gain.disconnect();
   }, FONDU * 1000 + 500);
+}
+
+/** Musique audible ou non selon la phase : fondu de sortie le jour, fondu d'entrée la nuit. */
+export function definirMusique(audible: boolean): void {
+  if (audible === musiqueVoulue) return;
+  musiqueVoulue = audible;
+  if (graphe) graphe.phaseMusique.gain.setTargetAtTime(audible ? 1 : 0, graphe.ctx.currentTime, FONDU / 3);
 }
 
 /** Ambiance voulue par l'écran (null = aucune). Fondu enchaîné si elle change. */

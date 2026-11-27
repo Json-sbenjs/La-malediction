@@ -18,6 +18,8 @@ et un retour sonore sur chaque bouton. Ils ne changent aucune règle du jeu, seu
   Hallow » (par défaut), « Evil Incoming » et « Burt's Requiem » de freepd.com (domaine public), « Haunted Houses » de
   HoliznaCC0 (CC0). Leurs aigus sont coupés au-dessus de 4 kHz pour un son étouffé, plus sombre (`SOMBRE` dans
   `scripts/sons/montages.ts`). La liste est `MORCEAUX` dans `src/web/sons-catalogue.ts`.
+- **La musique joue hors partie et la nuit** (nuit d'explication comprise) ; **le jour et à la fin, elle s'efface** en fondu
+  et on n'entend que l'ambiance (vent, oiseaux) et les effets. C'est `musiqueDe` dans `src/web/sons-evenements.ts`.
 - **Même volume pour tous** : chaque son est réglé à un volume perçu commun (norme EBU R128, mesurée par ffmpeg) :
   environ −19 LUFS pour les effets et réveils, −18 pour la musique, −20 pour les ambiances ; l'interface est plus discrète.
 - **Feedback** : un son qui monte = positif (valider, choisir), un son qui descend = négatif (erreur, retirer).
@@ -36,10 +38,10 @@ Tous les fichiers sont des MP3 dans `public/sons/`, montés par `npm run sons`.
 
 | Moment | Ce qu'on entend | Base(s) | Fichier |
 |---|---|---|---|
-| Toute la session, au choix du MJ (par défaut) | « Creepy Hallow » : lent et inquiétant, la mineur, aigus étouffés. | Creepy Hallow (freepd.com, domaine public) | `sons/musique/musique_creux.mp3` |
-| Toute la session, au choix du MJ | « Evil Incoming » : menace qui monte, la mineur, aigus étouffés. | Evil Incoming (freepd.com, domaine public) | `sons/musique/musique_malefique.mp3` |
-| Toute la session, au choix du MJ | « Haunted Houses » : maison hantée, fa mineur, aigus étouffés. | Haunted Houses (HoliznaCC0, CC0 1.0) | `sons/musique/musique_hantee.mp3` |
-| Toute la session, au choix du MJ | « Burt's Requiem » : requiem lent et grave, sol mineur, aigus étouffés. | Burt's Requiem (freepd.com, domaine public) | `sons/musique/musique_requiem.mp3` |
+| Hors partie et la nuit, au choix du MJ (par défaut) | « Creepy Hallow » : lent et inquiétant, la mineur, aigus étouffés. | Creepy Hallow (freepd.com, domaine public) | `sons/musique/musique_creux.mp3` |
+| Hors partie et la nuit, au choix du MJ | « Evil Incoming » : menace qui monte, la mineur, aigus étouffés. | Evil Incoming (freepd.com, domaine public) | `sons/musique/musique_malefique.mp3` |
+| Hors partie et la nuit, au choix du MJ | « Haunted Houses » : maison hantée, fa mineur, aigus étouffés. | Haunted Houses (HoliznaCC0, CC0 1.0) | `sons/musique/musique_hantee.mp3` |
+| Hors partie et la nuit, au choix du MJ | « Burt's Requiem » : requiem lent et grave, sol mineur, aigus étouffés. | Burt's Requiem (freepd.com, domaine public) | `sons/musique/musique_requiem.mp3` |
 | Nuit d'explication et nuits | Nuit : forêt de nuit (insectes, bruissements) et drone inquiétant en dessous. | AMBForst_Night_LOOP_01 (Oculus VR, LLC, CC BY 4.0) + DSGNDron_DroneCreepy_OS_02 (Oculus VR, LLC, CC BY 4.0) | `sons/ambiance/amb_nuit.mp3` |
 | Jours (élection, vote) | Jour : vent léger dans les arbres, oiseaux. | WINDVege_LightWindTreesBirds_LOOP_01 (Oculus VR, LLC, CC BY 4.0) | `sons/ambiance/amb_jour.mp3` |
 | Tout bouton sans son propre | Clic de bois : tout bouton sans son propre. | UIClick_WoodConfirm_OS_01 (Oculus VR, LLC, CC BY 4.0) | `sons/ui/ui_clic.mp3` |

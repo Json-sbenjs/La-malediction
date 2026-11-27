@@ -45,6 +45,7 @@ import {
   choisirMusiquePerso,
   debloquerAudio,
   definirAmbiance,
+  definirMusique,
   jouerEffet,
   jouerLot,
   lesReglages,
@@ -52,7 +53,7 @@ import {
   reglerVolume,
 } from './sons';
 import { MORCEAUX } from './sons-catalogue';
-import { ambianceDe, sonDeLEtape, sonsDebutPartie, sonsDuChangement } from './sons-evenements';
+import { ambianceDe, musiqueDe, sonDeLEtape, sonsDebutPartie, sonsDuChangement } from './sons-evenements';
 import '@fontsource/eb-garamond/400.css';
 import '@fontsource/eb-garamond/500.css';
 import '@fontsource/eb-garamond/600.css';
@@ -397,7 +398,7 @@ function carteSons(): string {
       <p class="note">${
         r.musiquePerso
           ? `Ta musique : <strong>${echapper(r.musiquePerso)}</strong>`
-          : "Quatre musiques sombres au choix. Tu peux aussi mettre un fichier de la tablette (MP3, M4A…) : il reste sur cet appareil."
+          : "Quatre musiques sombres au choix, jouées hors partie et la nuit (le jour, seulement l'ambiance). Tu peux aussi mettre un fichier de la tablette (MP3, M4A…) : il reste sur cet appareil."
       }</p>
       <div class="choix-ligne">
         <label class="bouton-fichier">🎵 Choisir ma musique<input type="file" accept="audio/*" data-musique-fichier hidden></label>
@@ -746,6 +747,7 @@ function afficher(): void {
         : ecranChoix();
 
   definirAmbiance(ui.generateur || ui.partage || ui.scanner ? null : ambianceDe(ui.etat));
+  definirMusique(musiqueDe(ui.etat));
 
   // Bascule nuit / jour : fondu de 600 ms (le fond de page change en douceur via le CSS).
   const theme = themeVoulu();

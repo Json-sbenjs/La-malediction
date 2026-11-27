@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { ROLES, appliquer, creerPartie, etapeSuivante, type Action, type EtatPartie, type RoleId } from '../../src/engine';
 import { SONS } from '../../src/web/sons-catalogue';
-import { ambianceDe, sonDeFin, sonDeLEtape, sonsDebutPartie, sonsDuChangement } from '../../src/web/sons-evenements';
+import { ambianceDe, musiqueDe, sonDeFin, sonDeLEtape, sonsDebutPartie, sonsDuChangement } from '../../src/web/sons-evenements';
 import { PLAN_COMPLET, jouerNuit, nouvellePartie, planDeTest } from '../engine/aides';
 
 /** Applique l'action et renvoie le nouvel état avec la liste des sons, dans l'ordre. */
@@ -114,5 +114,14 @@ describe('sons de la partie', () => {
     const jour = appliquer(jouerNuit(nouvellePartie(PLAN_COMPLET)), { type: 'passer' });
     expect(ambianceDe(jour)).toBe('amb_jour');
     expect(ambianceDe({ ...jour, phase: { type: 'fin', gagnants: 'pelerins' } })).toBeNull();
+  });
+
+  it('musique : hors partie et la nuit, pas le jour ni à la fin', () => {
+    expect(musiqueDe(null)).toBe(true);
+    expect(musiqueDe(creerPartie(PLAN_COMPLET))).toBe(true);
+    expect(musiqueDe(nouvellePartie(PLAN_COMPLET))).toBe(true);
+    const jour = appliquer(jouerNuit(nouvellePartie(PLAN_COMPLET)), { type: 'passer' });
+    expect(musiqueDe(jour)).toBe(false);
+    expect(musiqueDe({ ...jour, phase: { type: 'fin', gagnants: 'pelerins' } })).toBe(false);
   });
 });

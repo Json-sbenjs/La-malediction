@@ -83,6 +83,15 @@ export function ambianceDe(etat: EtatPartie | null): 'amb_nuit' | 'amb_jour' | n
   }
 }
 
+/**
+ * La musique de fond s'entend hors partie et la nuit (explication comprise) ; elle s'efface le jour
+ * et à la fin de la partie, où l'on n'entend que l'ambiance et les effets (choix du MJ).
+ */
+export function musiqueDe(etat: EtatPartie | null): boolean {
+  const phase = etat?.phase.type;
+  return phase !== 'jour' && phase !== 'fin';
+}
+
 /** Sons du lancement d'une partie : le gong, puis le premier rôle à présenter. */
 export function sonsDebutPartie(etat: EtatPartie): SonPrevu[] {
   const premier = sonDeLEtape(etapeSuivante(etat));
