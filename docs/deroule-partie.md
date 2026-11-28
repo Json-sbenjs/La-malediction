@@ -8,10 +8,22 @@ Déroulé : **mise en place → nuit d'explication → élection de l'Alpha (jou
 La victoire est vérifiée après chaque action du MJ qui peut tuer quelqu'un (fin de nuit, vote, effets de mort).
 À toute étape, le MJ peut **annuler sa dernière action** (bouton « Annuler », `historique.ts`) : la partie revient exactement à l'état d'avant, jusqu'à 100 actions en arrière.
 
-## 1. Mise en place — `mise-en-place.ts`, `generateur.ts`
+## 1. Mise en place — `mise-en-place.ts`, `generateur.ts`, `ajustement.ts`
 
 1. Le MJ choisit la salle et le nombre de joueurs, ce qui charge un **plan de salle** (un rôle par siège).
    Il peut aussi utiliser la **salle sur mesure** : composition conseillée, forme de la salle (tour de table, table rectangulaire, U) et tirage des rôles.
+   **Modifier la salle** (le groupe annoncé à 15 arrive à 13 ou à 16) : bouton « ✏️ Modifier la salle » sur l'écran de choix.
+   L'écran ressemble à « Salle sur mesure » (mêmes compteurs et même aperçu, `src/web/composants-salle.ts`), mais part de la salle choisie :
+   - **Nombre de joueurs** (− / +, de 8 à 25) ;
+   - **Rôles `total / joueurs`** : « − » retire le siège de ce rôle qui a le plus grand numéro (les sièges suivants sont renumérotés, les prénoms suivent),
+     « + » ajoute un siège de ce rôle à une place libre. La Trinité et les Doubles s'ajoutent et se retirent en entier ;
+   - **Plan** : toucher deux sièges échange leurs rôles, l'appui long déplace un siège, « Mélanger les rôles » retire les rôles sans bouger les sièges.
+   L'appli ne choisit jamais à la place du MJ quel rôle enlever ou ajouter ; elle affiche les Spectres conseillés pour ce nombre de joueurs.
+   « Valider la salle » n'est possible qu'avec autant de rôles que de joueurs et un plan valide (`validerPlan`).
+   **Valider enregistre les changements et remplace la salle de base** (`remplacerSalle`) : « Clown » à 15 devient « Clown » à 13,
+   la salle à 15 n'apparaît plus et celle à 13 est sélectionnée. Si une autre salle « Clown » à 13 existait déjà, l'appli demande avant de l'écraser.
+   Un plan écrit dans le code n'est pas effacé : il est caché (`localStorage`, clé `malediction:plans-remplaces`) et la salle modifiée prend sa place.
+   « Annuler les changements » (dans l'écran) ou « Annuler » (en haut) ne touchent pas à la salle de base.
 2. Prénoms des joueurs : facultatifs.
 3. Si le **Dévoué** est en jeu, le MJ montre sa carte à tout le monde.
 4. Si l'**Alpha** est une carte posée sur un siège, son porteur est Alpha d'office.
@@ -83,6 +95,11 @@ Un enrôlé ne peut jamais viser le Sectaire avec son pouvoir.
    - **jours pairs** (2, 4, 6…) : ils **votent**, 1 voix chacun, uniquement contre un vivant (second vote du Bourreau compris) ;
    - **jours impairs** (1, 3, 5…) : ils **parlent** pendant la discussion, mais ne votent pas.
 4. Discussion, puis **vote du village** : l'Alpha compte double, le joueur marqué part avec une voix, une égalité en tête n'élimine personne.
+   Deux façons de saisir le vote (boutons en haut du panneau) :
+   - **à main levée** (par défaut, `compterMainsLevees`) : le MJ touche un joueur et lui met directement le nombre de mains levées (boutons 0 à 10, ou − / +), puis passe au suivant.
+     L'Alpha lève la main comme les autres : le MJ indique contre qui (« 👑 L'Alpha a levé la main contre… »), ce qui ajoute 1 voix (sa voix compte double).
+     Il ne peut pas y avoir plus de mains que de votants (les morts comptent les jours pairs) ;
+   - **voix par voix** (`compterVotes`) : le MJ touche un votant, puis le joueur qu'il vise.
    Le MJ peut aussi faire un **vote rapide** (il désigne directement l'éliminé).
 5. **Sacrifié** : il peut mourir à la place du condamné (une fois).
 6. Effets de mort du condamné (§ 5), puis test de victoire.
@@ -99,4 +116,5 @@ Un enrôlé ne peut jamais viser le Sectaire avec son pouvoir.
 ## Écarts encore ouverts
 
 - **FigJam à mettre à jour** (bloqué par la limite d'appels Figma du forfait Starter) : nuit d'explication rôle par rôle, ordre de la Nuit Type ci-dessus, Nécromancien confirmé (à placer après l'Envoûteur), bloc « si l'Oracle en vie » de l'Originel à renommer, Sainte qui « sauve la victime », bloc de l'Adepte (« mentor » et non « modèle »), Usurpateur avant les autres effets, successeur de l'Alpha, Sacrifié, Bourreau, vote rapide, dissolution Trinité / Doubles, Sectaire, test de victoire après la nuit, sections « architecture du code » et « planning » à jour.
+- **FigJam, aussi** : l'écran « Modifier la salle » avant le lancement (§ 1) et le vote à main levée (§ 6).
 - **FigJam, aussi** : la question « l'Augure a-t-elle été vue ? » (rang 57) et les morts (ils votent les jours pairs, parlent les jours impairs).

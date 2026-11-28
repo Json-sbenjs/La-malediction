@@ -14,7 +14,7 @@ export { PLANS, validerPlan } from './plans';
 export { ROLES, getRole } from './roles';
 export { choisirPlan, nombresDeJoueurs, sallesDisponibles } from './mise-en-place';
 export { nomJoueur } from './outils';
-export { compterVotes, mortsVotent, type ResultatVote } from './vote';
+export { compterMainsLevees, compterVotes, mortsVotent, votantsDuJour, type ResultatVote } from './vote';
 
 /** Crée une partie à partir d'un plan (prénoms facultatifs, dans l'ordre des sièges). */
 export function creerPartie(plan: Plan, prenoms?: (string | null)[]): EtatPartie {
@@ -67,6 +67,19 @@ export {
   type Composition,
   type Forme,
 } from './generateur';
-export { MIN_JOUEURS } from './plans';
+export { MAX_JOUEURS, MIN_JOUEURS, compterRoles } from './plans';
+export {
+  ajouterRole,
+  ajouterSiege,
+  cartesRestantes,
+  changerRole,
+  equilibreSpectres,
+  melangerRoles,
+  placeLibre,
+  remplacerSalle,
+  retirerRole,
+  retirerSiege,
+  tailleGroupe,
+} from './ajustement';
 export { PARAM_PARTAGE, decoderPlan, encoderPlan } from './partage';
 export { LIMITE_HISTORIQUE, annuler, memoriser, type Historique } from './historique';

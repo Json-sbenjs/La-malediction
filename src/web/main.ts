@@ -5,6 +5,7 @@ import {
   ROLES,
   appliquer,
   choisirPlan,
+  compterMainsLevees,
   compterVotes,
   mortsVotent,
   creerPartie,
@@ -24,6 +25,7 @@ import {
   annuler,
   decoderPlan,
   memoriser,
+  remplacerSalle,
   PARAM_PARTAGE,
 } from '../engine';
 import { consigneReveil, modeSaisie } from './consignes';
@@ -35,6 +37,13 @@ import {
   type EtatGenerateur,
 } from './generateur';
 import { activerDeplacement, clicApresDeplacement } from './deplacement';
+import {
+  clicAjustement,
+  deplacerDansAjustement,
+  ecranAjustement,
+  nouvelAjustement,
+  type EtatAjustement,
+} from './ajustement';
 import { densite } from './densite';
 import { SI_PAS_D_IMAGE } from './images';
 import { arreterScan, demarrerScan, ecranPartage, ecranScanner, lienDePartage } from './partage';
@@ -48,9 +57,21 @@ import './style.css';
 
 const CLE_SAUVEGARDE = 'malediction:partie';
 const CLE_PLANS = 'malediction:plans';
+/** Plans du code remplacés par une salle modifiée (« Modifier la salle ») : on ne les montre plus. */
+const CLE_PLANS_REMPLACES = 'malediction:plans-remplaces';
 
-/** Salles créées avec le générateur, gardées dans le navigateur. */
+/** Salles créées avec le générateur (ou modifiées), gardées dans le navigateur. */
 let plansPerso: Plan[] = lirePlansPerso();
+/** Identifiants des plans du code remplacés par une salle modifiée. */
+let plansRemplaces: string[] = lireListe(CLE_PLANS_REMPLACES);
+
+function lireListe(cle: string): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(cle) ?? '[]') as string[];
+  } catch {
+    return [];
+  }
+}
 
 function lirePlansPerso(): Plan[] {
   try {
@@ -63,14 +84,22 @@ function lirePlansPerso(): Plan[] {
 function ecrirePlansPerso(): void {
   try {
     localStorage.setItem(CLE_PLANS, JSON.stringify(plansPerso));
+    localStorage.setItem(CLE_PLANS_REMPLACES, JSON.stringify(plansRemplaces));
   } catch {
     // Stockage indisponible : la salle reste disponible jusqu'à la fermeture.
   }
 }
 
-/** Plans saisis dans le code (ou de démo s'il n'y en a pas), puis les salles sur mesure. */
+/**
+ * Plans saisis dans le code (ou de démo s'il n'y en a pas), puis les salles sur mesure.
+ * Une salle sur mesure enregistrée sous le même nom et le même nombre de joueurs remplace le plan du code,
+ * et un plan du code modifié (« Modifier la salle ») n'est plus montré.
+ */
 function tousLesPlans(): Plan[] {
-  return [...(PLANS.length > 0 ? PLANS : PLANS_DEMO), ...plansPerso];
+  const code = (PLANS.length > 0 ? PLANS : PLANS_DEMO).filter(
+    (p) => !estPerso(p.salle, p.nbJoueurs) && !plansRemplaces.includes(p.id),
+  );
+  return [...code, ...plansPerso];
 }
 
 function estPerso(salle: string, nb: number): boolean {
@@ -130,6 +159,16 @@ interface Ui {
   cameraEnPanne: boolean;
   /** Message de réussite sur l'écran de choix ou de partage (salle ajoutée, lien copié). */
   info: string | null;
+  /** Écran « Modifier la salle » ouvert (null = fermé). */
+  modifSalle: EtatAjustement | null;
+  /** Saisie du vote : à main levée (nombre de mains par joueur) ou voix par voix (qui vote contre qui). */
+  modeVote: 'mains' | 'voix';
+  /** Vote à main levée : nombre de mains levées contre chaque joueur. */
+  mains: Record<JoueurId, number>;
+  /** Vote à main levée : joueur contre qui l'Alpha a levé la main (sa voix compte double). */
+  voteAlpha: JoueurId | null;
+  /** Vote à main levée : joueur touché, dont on saisit les mains. */
+  cibleMains: JoueurId | null;
 }
 
 const ui: Ui = {
@@ -142,6 +181,11 @@ const ui: Ui = {
   scanner: false,
   cameraEnPanne: false,
   info: null,
+  modifSalle: null,
+  modeVote: 'mains',
+  mains: {},
+  voteAlpha: null,
+  cibleMains: null,
   salle: sallesDisponibles(tousLesPlans())[0] ?? '',
   nbJoueurs: 0,
   prenoms: [],
@@ -181,6 +225,9 @@ function viderSaisie(): void {
   ui.selection = [];
   ui.votes = {};
   ui.votant = null;
+  ui.mains = {};
+  ui.voteAlpha = null;
+  ui.cibleMains = null;
   ui.erreur = null;
 }
 
@@ -297,6 +344,7 @@ function siegesActifs(etape: Etape): JoueurId[] {
     case 'election-alpha':
       return etape.candidats;
     case 'vote':
+      if (ui.modeVote === 'mains') return etape.ciblesPossibles;
       return ui.votant === null ? etape.votants : etape.ciblesPossibles;
     default:
       return [];
@@ -340,6 +388,7 @@ function ecranChoix(): string {
           .map((n) => bouton(String(n), `data-nb="${n}"`, n === ui.nbJoueurs ? 'actif' : ''))
           .join('')}</div>
         <div class="choix-ligne">
+          ${ui.nbJoueurs > 0 ? bouton('✏️ Modifier la salle (joueurs en plus ou en moins)', 'data-modifier-salle') : ''}
           ${bouton('🛠️ Salle sur mesure', 'data-ouvrir-generateur')}
           ${bouton('📷 Scanner une salle', 'data-scanner')}
           ${estPerso(ui.salle, ui.nbJoueurs) ? bouton('Partager (QR code)', 'data-partager') : ''}
@@ -349,7 +398,7 @@ function ecranChoix(): string {
       ${ui.info ? `<p class="info">${echapper(ui.info)}</p>` : ''}
       ${ui.nbJoueurs > 0 ? `<section class="carte"><h2>Prénoms</h2><div class="prenoms">${champsPrenoms}</div></section>` : ''}
       ${ui.erreur ? `<p class="erreur">${echapper(ui.erreur)}</p>` : ''}
-      ${bouton('Commencer la partie', 'data-commencer', 'principal')}
+      ${bouton(`Commencer la partie${ui.nbJoueurs > 0 ? ` à ${ui.nbJoueurs}` : ''}`, 'data-commencer', 'principal')}
     </main>`;
 }
 
@@ -364,7 +413,7 @@ function siege(j: Joueur, etape: Etape, actifs: JoueurId[], compte: Record<Joueu
     `camp-${j.camp}`,
     j.vivant ? '' : 'mort',
     actifs.includes(j.id) ? 'actif' : '',
-    ui.selection.includes(j.id) || ui.votant === j.id ? 'choisi' : '',
+    ui.selection.includes(j.id) || ui.votant === j.id || ui.cibleMains === j.id ? 'choisi' : '',
     acteur ? 'acteur' : '',
   ].join(' ');
   const badges = [
@@ -393,6 +442,77 @@ function siege(j: Joueur, etape: Etape, actifs: JoueurId[], compte: Record<Joueu
       ${infoVote}
     </button>`;
 }
+
+function nbVotesSaisis(): number {
+  return Object.values(ui.votes).filter((v) => v !== null).length;
+}
+
+function totalMains(): number {
+  return Object.values(ui.mains).reduce((total, n) => total + n, 0);
+}
+
+/** Vote voix par voix : toucher un votant, puis le joueur qu'il vise. */
+function saisieVoixParVoix(): string {
+  return `
+    <p class="consigne">Touche un votant, puis le joueur qu'il vise. La voix de l'Alpha 👑 compte double.</p>
+    <p>${
+      ui.votant === null
+        ? 'Touche un votant, ou directement le joueur à éliminer.'
+        : `${nom(ui.votant)} vote contre… (touche-le à nouveau pour annuler)`
+    }</p>
+    ${
+      ui.votant === null
+        ? ''
+        : `<div class="raccourci">
+             <p>Vote rapide : pas besoin de saisir les voix.</p>
+             ${bouton(`Éliminer directement ${nom(ui.votant)}`, `data-eliminer="${ui.votant}"`)}
+           </div>`
+    }`;
+}
+
+/** Nombres proposés d'un seul toucher pour les mains levées contre un joueur. */
+const MAINS_RAPIDES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+/** Vote à main levée : toucher un joueur, puis dire combien de mains se lèvent contre lui. */
+function saisieMainsLevees(etape: Extract<Etape, { type: 'vote' }>): string {
+  const nbVotants = etape.votants.length;
+  const total = totalMains();
+  const cible = ui.cibleMains;
+  const alpha = etape.alpha;
+  let saisie = '<p>Touche le joueur visé sur le plan, puis le nombre de mains levées contre lui.</p>';
+  if (cible !== null) {
+    const n = ui.mains[cible] ?? 0;
+    const plein = total >= nbVotants;
+    saisie = `
+      <div class="mains">
+        <p>Mains levées contre <strong>${nom(cible)}</strong> :</p>
+        <div class="compteur grand">
+          ${bouton('−', `data-mains-pas="-1" aria-label="Une main de moins" ${n === 0 ? 'disabled' : ''}`, 'rond')}
+          <strong>${n}</strong>
+          ${bouton('+', `data-mains-pas="1" aria-label="Une main de plus" ${plein ? 'disabled' : ''}`, 'rond')}
+        </div>
+        <div class="choix-ligne nombres">${MAINS_RAPIDES.filter((k) => k <= nbVotants)
+          .map((k) => bouton(String(k), `data-mains="${k}" ${k - n > nbVotants - total ? 'disabled' : ''}`, k === n ? 'actif' : ''))
+          .join('')}</div>
+        ${bouton(
+          `👑 L'Alpha (${nom(alpha)}) a levé la main contre ${nom(cible)}`,
+          `data-vote-alpha="${cible}" aria-pressed="${ui.voteAlpha === cible}" ${n === 0 ? 'disabled' : ''}`,
+          ui.voteAlpha === cible ? 'actif' : '',
+        )}
+        <div class="raccourci">
+          <p>Vote rapide : pas besoin de compter.</p>
+          ${bouton(`Éliminer directement ${nom(cible)}`, `data-eliminer="${cible}"`)}
+        </div>
+      </div>`;
+  }
+  return `
+    <p class="consigne">Compte les mains levées contre chaque joueur. La voix de l'Alpha 👑 compte double : dis contre qui il a levé la main.</p>
+    ${saisie}
+    <p class="max">Mains comptées : ${total} sur ${nbVotants} votants.</p>`;
+}
+
+/** Erreur de saisie du vote en cours (trop de mains…), affichée sans bloquer l'écran. */
+let erreurVote: string | null = null;
 
 function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
   const etat = ui.etat!;
@@ -560,14 +680,11 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
         </div>`;
 
     case 'vote': {
-      const nbVotes = Object.values(ui.votes).filter((v) => v !== null).length;
       const classement = Object.entries(compte)
         .sort((a, b) => b[1] - a[1])
         .map(([id, n]) => `<li>${nom(Number(id))} : ${n} voix</li>`)
         .join('');
-      return `
-        <h2>Vote du village</h2>
-        <p class="consigne">Touche un votant, puis le joueur qu'il vise. La voix de l'Alpha 👑 compte double.</p>
+      const rappels = `
         ${
           etat.marque !== null && etat.joueurs.some((j) => j.id === etat.marque && j.vivant)
             ? `<p>🪶 Marque de l'Inquisiteur : ${nom(etat.marque)} part avec une voix contre lui.</p>`
@@ -577,30 +694,42 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
           !etat.joueurs.some((j) => !j.vivant)
             ? ''
             : mortsVotent(etape.numero)
-              ? '<p>🕯️ Jour pair : les morts votent aussi (1 voix chacun), touche-les comme les vivants.</p>'
+              ? `<p>🕯️ Jour pair : les morts votent aussi (1 voix chacun)${
+                  ui.modeVote === 'mains' ? ', compte leurs mains' : ', touche-les comme les vivants'
+                }.</p>`
               : '<p>🕯️ Jour impair : les morts peuvent parler, mais ne votent pas.</p>'
         }
         ${
           etat.joueurs.some((j) => j.vivant && j.statuts.enrole)
             ? '<p>⛓️ Les enrôlés doivent voter comme le Sectaire.</p>'
             : ''
-        }
-        <p>${
-          ui.votant === null
-            ? 'Touche un votant, ou directement le joueur à éliminer.'
-            : `${nom(ui.votant)} vote contre… (touche-le à nouveau pour annuler)`
-        }</p>
+        }`;
+      const modes = `
+        <div class="choix-ligne" role="group" aria-label="Façon de saisir le vote">
+          ${bouton('✋ Main levée', 'data-mode-vote="mains"', ui.modeVote === 'mains' ? 'actif' : '')}
+          ${bouton('👆 Voix par voix', 'data-mode-vote="voix"', ui.modeVote === 'voix' ? 'actif' : '')}
+        </div>`;
+      return `
+        <h2>Vote du village</h2>
+        ${modes}
+        ${ui.modeVote === 'mains' ? saisieMainsLevees(etape) : saisieVoixParVoix()}
+        ${rappels}
         ${classement ? `<ul class="classement">${classement}</ul>` : ''}
-        ${
-          ui.votant === null
-            ? ''
-            : `<div class="raccourci">
-                 <p>Vote rapide : pas besoin de saisir les voix.</p>
-                 ${bouton(`Éliminer directement ${nom(ui.votant)}`, `data-eliminer="${ui.votant}"`)}
-               </div>`
-        }
+        ${erreurVote ? `<p class="attention">${echapper(erreurVote)}</p>` : ''}
         <div class="boutons">
-          ${bouton(`Valider le vote (${nbVotes})`, `data-voter ${nbVotes === 0 ? 'disabled' : ''}`, 'principal')}
+          ${
+            ui.modeVote === 'mains'
+              ? bouton(
+                  `Valider le vote (${totalMains()} mains)`,
+                  `data-voter-mains ${totalMains() === 0 || erreurVote ? 'disabled' : ''}`,
+                  'principal',
+                )
+              : bouton(
+                  `Valider le vote (${nbVotesSaisis()})`,
+                  `data-voter ${nbVotesSaisis() === 0 ? 'disabled' : ''}`,
+                  'principal',
+                )
+          }
           ${bouton('Personne n\'est éliminé', 'data-passer')}
         </div>`;
     }
@@ -638,11 +767,16 @@ function ecranPartie(): string {
   const etape = etapeSuivante(etat);
   const actifs = siegesActifs(etape);
   let compte: Record<JoueurId, number> = {};
+  erreurVote = null;
   if (etape.type === 'vote') {
     try {
-      compte = compterVotes(etat, ui.votes).compte;
-    } catch {
-      // Votes incomplets : on n'affiche pas de compte.
+      compte =
+        ui.modeVote === 'mains'
+          ? compterMainsLevees(etat, ui.mains, ui.voteAlpha).compte
+          : compterVotes(etat, ui.votes).compte;
+    } catch (e) {
+      // Saisie incomplète ou impossible : pas de compte, on dit pourquoi (vote à main levée).
+      if (ui.modeVote === 'mains') erreurVote = e instanceof Error ? e.message : String(e);
     }
   }
 
@@ -669,7 +803,7 @@ function ecranPartie(): string {
 
 /** Thème de la charte : Nuit pendant les réveils et hors partie, Jour du matin à la nuit suivante. */
 function themeVoulu(): 'nuit' | 'jour' {
-  const phase = ui.generateur ? null : ui.etat?.phase.type;
+  const phase = ui.generateur || ui.modifSalle ? null : ui.etat?.phase.type;
   return phase === 'jour' || phase === 'fin' ? 'jour' : 'nuit';
 }
 
@@ -679,6 +813,8 @@ function afficher(): void {
   if (!ui.scanner) arreterScan();
   app.innerHTML = ui.generateur
     ? ecranGenerateur(ui.generateur)
+    : ui.modifSalle
+      ? ecranAjustement(ui.modifSalle)
     : ui.partage
       ? ecranPartage(ui.partage, ui.info)
     : ui.scanner
@@ -723,6 +859,11 @@ function afficher(): void {
 
 function toucherSiege(id: JoueurId): void {
   const etape = etapeSuivante(ui.etat!);
+  if (etape.type === 'vote' && ui.modeVote === 'mains') {
+    if (!etape.ciblesPossibles.includes(id)) return;
+    ui.cibleMains = ui.cibleMains === id ? null : id;
+    return;
+  }
   if (etape.type === 'vote') {
     if (ui.votant === null) {
       if (!etape.votants.includes(id)) return;
@@ -764,6 +905,36 @@ function valider(): void {
       jouer({ type: 'elire-alpha', cible });
       return;
   }
+}
+
+/**
+ * « Valider la salle » : les changements sont enregistrés et la salle modifiée remplace la salle de base
+ * (ex. « Clown » à 15 devient « Clown » à 13). Elle est sélectionnée sur l'écran de choix.
+ * Renvoie false si le MJ refuse d'écraser une autre salle du même nom (on reste dans l'écran).
+ */
+function finirModifSalle(a: EtatAjustement): boolean {
+  const ancienne = a.prevu;
+  const nb = a.plan.nbJoueurs;
+  const autre = nb !== ancienne.nbJoueurs && tousLesPlans().some((p) => p.salle === ancienne.salle && p.nbJoueurs === nb);
+  if (autre && !confirm(`Il existe déjà une salle « ${ancienne.salle} » à ${nb} joueurs. La remplacer par celle-ci ?`)) {
+    return false;
+  }
+  // Plans du code (ancienne salle, ou autre salle écrasée) : on les cache, ils ne s'effacent pas.
+  for (const p of PLANS.length > 0 ? PLANS : PLANS_DEMO) {
+    const touche = p.salle === ancienne.salle && (p.nbJoueurs === ancienne.nbJoueurs || p.nbJoueurs === nb);
+    if (touche && !plansRemplaces.includes(p.id)) plansRemplaces = [...plansRemplaces, p.id];
+  }
+  plansPerso = remplacerSalle(plansPerso, ancienne, a.plan);
+  ecrirePlansPerso();
+  ui.salle = ancienne.salle;
+  ui.nbJoueurs = nb;
+  ui.prenoms = a.prenoms;
+  ui.info =
+    nb === ancienne.nbJoueurs
+      ? `Salle « ${ancienne.salle} » enregistrée.`
+      : `Salle « ${ancienne.salle} » enregistrée à ${nb} joueurs (au lieu de ${ancienne.nbJoueurs}).`;
+  ui.modifSalle = null;
+  return true;
 }
 
 app.addEventListener('click', (evt) => {
@@ -818,6 +989,15 @@ app.addEventListener('click', (evt) => {
     return afficher();
   }
 
+  // Modifier la salle (joueurs en plus ou en moins)
+  if (ui.modifSalle) {
+    const modif = ui.modifSalle;
+    const resultat = clicAjustement(modif, d);
+    if (resultat?.type === 'fermer') ui.modifSalle = null;
+    if (resultat?.type === 'valider') finirModifSalle(modif);
+    return afficher();
+  }
+
   // Générateur de salle
   if (ui.generateur) {
     const resultat = clicGenerateur(ui.generateur, d);
@@ -841,6 +1021,12 @@ app.addEventListener('click', (evt) => {
     ui.nbJoueurs = nombresDeJoueurs(ui.salle, tousLesPlans())[0] ?? 0;
   } else if (d.nb !== undefined) {
     ui.nbJoueurs = Number(d.nb);
+  } else if (d.modifierSalle !== undefined) {
+    try {
+      ui.modifSalle = nouvelAjustement(choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans()), ui.prenoms);
+    } catch (e) {
+      ui.erreur = e instanceof Error ? e.message : String(e);
+    }
   } else if (d.commencer !== undefined) {
     try {
       const plan = choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans());
@@ -895,6 +1081,22 @@ app.addEventListener('click', (evt) => {
     return jouer({ type: 'eliminer', cible: Number(d.eliminer) });
   } else if (d.voter !== undefined) {
     return jouer({ type: 'vote', votes: ui.votes });
+  } else if (d.voterMains !== undefined) {
+    return jouer({ type: 'vote-main-levee', mains: ui.mains, voteAlpha: ui.voteAlpha });
+  } else if (d.modeVote !== undefined) {
+    // Changer de façon de saisir repart d'une saisie vide (les deux ne se mélangent pas).
+    ui.modeVote = d.modeVote === 'voix' ? 'voix' : 'mains';
+    viderSaisie();
+  } else if ((d.mains !== undefined || d.mainsPas !== undefined) && ui.cibleMains !== null) {
+    const cible = ui.cibleMains;
+    const avant = ui.mains[cible] ?? 0;
+    const n = Math.max(0, d.mains !== undefined ? Number(d.mains) : avant + Number(d.mainsPas));
+    ui.mains = { ...ui.mains, [cible]: n };
+    if (n === 0) delete ui.mains[cible];
+    if (n === 0 && ui.voteAlpha === cible) ui.voteAlpha = null;
+  } else if (d.voteAlpha !== undefined) {
+    const cible = Number(d.voteAlpha);
+    ui.voteAlpha = ui.voteAlpha === cible ? null : cible;
   } else if (d.quitter !== undefined) {
     if (!confirm('Abandonner la partie en cours ?')) return;
     ui.etat = null;
@@ -912,9 +1114,10 @@ app.addEventListener('click', (evt) => {
   afficher();
 });
 
-// Générateur : appui long sur un siège puis glisser pour le placer.
+// Générateur et « Modifier la salle » : appui long sur un siège puis glisser pour le placer.
 activerDeplacement(app, (numero, position) => {
-  if (ui.generateur && position) deplacerDansGenerateur(ui.generateur, numero, position);
+  if (position && ui.generateur) deplacerDansGenerateur(ui.generateur, numero, position);
+  else if (position && ui.modifSalle) deplacerDansAjustement(ui.modifSalle, numero, position);
   afficher();
 });
 
