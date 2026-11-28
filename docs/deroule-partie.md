@@ -21,6 +21,9 @@ La victoire est vérifiée après chaque action du MJ qui peut tuer quelqu'un (f
    L'appli ne choisit jamais à la place du MJ quel rôle enlever ou ajouter ; elle affiche les Spectres conseillés pour ce nombre de joueurs.
    « Valider la salle » n'est possible qu'avec autant de rôles que de joueurs et un plan valide (`validerPlan`).
    Le plan modifié sert pour la partie de ce soir ; il n'est pas gardé comme nouvelle salle.
+   Après validation, le bouton devient « ✏️ Modifier la salle (modifiée : 13 joueurs) » : il rouvre l'écran **avec les modifications déjà faites**,
+   pour corriger ce qui n'allait pas. La salle modifiée est gardée même si l'appli est fermée avant la partie
+   (`localStorage`, clé `malediction:salle-modifiee`) ; elle est oubliée quand la partie commence, quand on change de salle ou de nombre de joueurs, ou avec « Revenir au plan prévu ».
    « Revenir au plan prévu » annule tout (prénoms compris).
 2. Prénoms des joueurs : facultatifs.
 3. Si le **Dévoué** est en jeu, le MJ montre sa carte à tout le monde.

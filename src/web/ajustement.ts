@@ -170,7 +170,7 @@ export function resumeAjustement(a: EtatAjustement): string {
       <h2>Salle modifiée pour ce soir : ${a.plan.nbJoueurs} joueurs
         <span class="max">(prévue à ${a.prevu.nbJoueurs}${ecart === 0 ? '' : `, ${ecart > 0 ? '+' : ''}${ecart}`})</span></h2>
       <div class="choix-ligne">
-        ${bouton('✏️ Modifier encore', 'data-modifier-salle')}
+        ${bouton('✏️ Reprendre la modification', 'data-modifier-salle')}
         ${bouton('Revenir au plan prévu', 'data-plan-prevu', 'discret')}
       </div>
     </section>`;

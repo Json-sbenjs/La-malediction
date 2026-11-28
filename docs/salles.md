@@ -24,6 +24,7 @@ Si le groupe n'a pas le nombre prévu, pas besoin de recréer une salle : écran
 Même écran que « Salle sur mesure », mais on part du plan prévu : on règle le nombre de joueurs, puis les rôles avec − / +
 jusqu'à avoir autant de rôles que de joueurs (détail dans `deroule-partie.md`, § 1), et on valide la salle.
 « Valider la salle » le garde pour la partie de ce soir seulement (il n'est pas enregistré comme nouvelle salle).
+On peut y revenir à tout moment avant de lancer : « ✏️ Modifier la salle » rouvre l'écran avec les modifications déjà faites.
 
 ## Partager une salle (QR code)
 

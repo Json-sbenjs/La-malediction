@@ -57,6 +57,8 @@ import './style.css';
 
 const CLE_SAUVEGARDE = 'malediction:partie';
 const CLE_PLANS = 'malediction:plans';
+/** Salle modifiée pour ce soir (« Modifier la salle »), gardée si l'appli est fermée avant la partie. */
+const CLE_AJUSTEMENT = 'malediction:salle-modifiee';
 
 /** Salles créées avec le générateur, gardées dans le navigateur. */
 let plansPerso: Plan[] = lirePlansPerso();
@@ -191,6 +193,30 @@ function sauvegarder(): void {
     else localStorage.removeItem(CLE_SAUVEGARDE);
   } catch {
     // Stockage indisponible (navigation privée…) : tant pis, la partie reste en mémoire.
+  }
+}
+
+/** Garde la salle modifiée pour ce soir (ou l'oublie quand il n'y en a plus). */
+function sauvegarderAjustement(): void {
+  try {
+    if (ui.ajustement) localStorage.setItem(CLE_AJUSTEMENT, JSON.stringify(ui.ajustement));
+    else localStorage.removeItem(CLE_AJUSTEMENT);
+  } catch {
+    // Stockage indisponible : la modification reste en mémoire jusqu'à la fermeture.
+  }
+}
+
+/** Retrouve la salle modifiée pour ce soir et la resélectionne sur l'écran de choix. */
+function restaurerAjustement(): void {
+  try {
+    const brut = localStorage.getItem(CLE_AJUSTEMENT);
+    if (!brut) return;
+    const a = JSON.parse(brut) as EtatAjustement;
+    ui.ajustement = a;
+    ui.salle = a.prevu.salle;
+    ui.nbJoueurs = a.prevu.nbJoueurs;
+  } catch {
+    // Sauvegarde illisible : on repart du plan prévu.
   }
 }
 
@@ -376,7 +402,13 @@ function ecranChoix(): string {
           .map((n) => bouton(String(n), `data-nb="${n}"`, n === ui.nbJoueurs ? 'actif' : ''))
           .join('')}</div>
         <div class="choix-ligne">
-          ${ui.nbJoueurs > 0 && !ui.ajustement ? bouton('✏️ Modifier la salle (joueurs en plus ou en moins)', 'data-modifier-salle') : ''}
+          ${
+            ui.nbJoueurs === 0
+              ? ''
+              : ui.ajustement
+                ? bouton(`✏️ Modifier la salle (modifiée : ${ui.ajustement.plan.nbJoueurs} joueurs)`, 'data-modifier-salle', 'actif')
+                : bouton('✏️ Modifier la salle (joueurs en plus ou en moins)', 'data-modifier-salle')
+          }
           ${bouton('🛠️ Salle sur mesure', 'data-ouvrir-generateur')}
           ${bouton('📷 Scanner une salle', 'data-scanner')}
           ${estPerso(ui.salle, ui.nbJoueurs) ? bouton('Partager (QR code)', 'data-partager') : ''}
@@ -800,6 +832,7 @@ const moinsDAnimations = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 function afficher(): void {
   if (!ui.scanner) arreterScan();
+  sauvegarderAjustement();
   app.innerHTML = ui.generateur
     ? ecranGenerateur(ui.generateur)
     : ui.modifSalle
@@ -995,7 +1028,7 @@ app.addEventListener('click', (evt) => {
     try {
       // On repart de la salle déjà modifiée ce soir s'il y en a une, sinon du plan prévu.
       ui.modifSalle = ui.ajustement
-        ? structuredClone(ui.ajustement)
+        ? { ...structuredClone(ui.ajustement), prenoms: [...ui.prenoms] } // prénoms tapés depuis la validation
         : nouvelAjustement(choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans()), ui.prenoms);
     } catch (e) {
       ui.erreur = e instanceof Error ? e.message : String(e);
@@ -1132,6 +1165,7 @@ function importerDepuisLien(): void {
 }
 
 restaurer();
+restaurerAjustement();
 importerDepuisLien();
 afficher();
 void garderEcranAllume();
