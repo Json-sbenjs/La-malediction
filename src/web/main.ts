@@ -896,20 +896,10 @@ function valider(): void {
   }
 }
 
-/** Écran « Modifier la salle » fermé avec un plan prêt : il sert pour ce soir (et peut devenir une salle). */
-function finirModifSalle(a: EtatAjustement, enregistrer: boolean): void {
-  if (enregistrer) {
-    const plan = a.plan;
-    const existe = tousLesPlans().some((p) => p.salle === plan.salle && p.nbJoueurs === plan.nbJoueurs);
-    if (existe && !confirm(`Remplacer la salle « ${plan.salle} » à ${plan.nbJoueurs} joueurs ?`)) return;
-    ajouterPlanPerso(plan);
-    ui.prenoms = a.prenoms; // ajouterPlanPerso vide les prénoms : on garde ceux déjà saisis
-    ui.ajustement = null; // la salle enregistrée est maintenant sélectionnée telle quelle
-    ui.info = `Salle « ${plan.salle} » à ${plan.nbJoueurs} joueurs enregistrée.`;
-  } else {
-    ui.prenoms = a.prenoms;
-    ui.ajustement = a;
-  }
+/** « Valider la salle » : le plan modifié sert pour la partie de ce soir (il n'est pas gardé comme salle). */
+function finirModifSalle(a: EtatAjustement): void {
+  ui.prenoms = a.prenoms;
+  ui.ajustement = a;
   ui.modifSalle = null;
 }
 
@@ -970,9 +960,7 @@ app.addEventListener('click', (evt) => {
     const modif = ui.modifSalle;
     const resultat = clicAjustement(modif, d);
     if (resultat?.type === 'fermer') ui.modifSalle = null;
-    if (resultat?.type === 'valider' || resultat?.type === 'enregistrer') {
-      finirModifSalle(modif, resultat.type === 'enregistrer');
-    }
+    if (resultat?.type === 'valider') finirModifSalle(modif);
     return afficher();
   }
 

@@ -22,8 +22,8 @@ Règles des positions :
 
 Si le groupe n'a pas le nombre prévu, pas besoin de recréer une salle : écran de choix → « ✏️ Modifier la salle ».
 Même écran que « Salle sur mesure », mais on part du plan prévu : on règle le nombre de joueurs, puis les rôles avec − / +
-jusqu'à avoir autant de rôles que de joueurs (détail dans `deroule-partie.md`, § 1), et on valide pour ce soir.
-« Enregistrer comme salle » garde le plan ajusté (même nom, nouveau nombre de joueurs) ; s'il existe déjà, l'appli demande avant de le remplacer.
+jusqu'à avoir autant de rôles que de joueurs (détail dans `deroule-partie.md`, § 1), et on valide la salle.
+« Valider la salle » le garde pour la partie de ce soir seulement (il n'est pas enregistré comme nouvelle salle).
 
 ## Partager une salle (QR code)
 

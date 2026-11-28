@@ -111,13 +111,12 @@ export function ecranAjustement(a: EtatAjustement): string {
       ${erreurs.length > 0 ? `<ul class="attention">${erreurs.map((e) => `<li>${echapper(e)}</li>`).join('')}</ul>` : ''}
       ${a.erreur ? `<p class="erreur">${echapper(a.erreur)}</p>` : ''}
       <div class="choix-ligne">
-        ${bouton(`Valider pour ce soir (${a.nbVise} joueurs)`, `data-aj-valider ${pret ? '' : 'disabled'}`, 'principal')}
-        ${bouton('Enregistrer comme salle', `data-aj-enregistrer ${pret ? '' : 'disabled'}`)}
+        ${bouton('Valider la salle', `data-aj-valider ${pret ? '' : 'disabled'}`, 'principal')}
       </div>
     </main>`;
 }
 
-export type ResultatAjustement = { type: 'fermer' } | { type: 'valider' } | { type: 'enregistrer' } | null;
+export type ResultatAjustement = { type: 'fermer' } | { type: 'valider' } | null;
 
 /** Traite un clic sur l'écran « Modifier la salle ». Modifie `a`. */
 export function clicAjustement(a: EtatAjustement, d: DOMStringMap): ResultatAjustement {
@@ -125,7 +124,6 @@ export function clicAjustement(a: EtatAjustement, d: DOMStringMap): ResultatAjus
   try {
     if (d.ajFermer !== undefined) return { type: 'fermer' };
     if (d.ajValider !== undefined && ajustementPret(a)) return { type: 'valider' };
-    if (d.ajEnregistrer !== undefined && ajustementPret(a)) return { type: 'enregistrer' };
 
     if (d.ajNb !== undefined) {
       a.nbVise = Math.min(MAX_JOUEURS, Math.max(MIN_JOUEURS, a.nbVise + Number(d.ajNb)));

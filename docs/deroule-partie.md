@@ -19,8 +19,8 @@ La victoire est vérifiée après chaque action du MJ qui peut tuer quelqu'un (f
      « + » ajoute un siège de ce rôle à une place libre. La Trinité et les Doubles s'ajoutent et se retirent en entier ;
    - **Plan** : toucher deux sièges échange leurs rôles, l'appui long déplace un siège, « Mélanger les rôles » retire les rôles sans bouger les sièges.
    L'appli ne choisit jamais à la place du MJ quel rôle enlever ou ajouter ; elle affiche les Spectres conseillés pour ce nombre de joueurs.
-   « Valider pour ce soir » n'est possible qu'avec autant de rôles que de joueurs et un plan valide (`validerPlan`).
-   Le plan modifié sert pour la partie de ce soir ; « Enregistrer comme salle » le garde comme salle sur mesure (même nom, nouveau nombre de joueurs).
+   « Valider la salle » n'est possible qu'avec autant de rôles que de joueurs et un plan valide (`validerPlan`).
+   Le plan modifié sert pour la partie de ce soir ; il n'est pas gardé comme nouvelle salle.
    « Revenir au plan prévu » annule tout (prénoms compris).
 2. Prénoms des joueurs : facultatifs.
 3. Si le **Dévoué** est en jeu, le MJ montre sa carte à tout le monde.
