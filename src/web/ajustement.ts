@@ -1,6 +1,7 @@
 // Écran « Modifier la salle » : le groupe annoncé à 15 arrive à 13 ou à 16.
 // Il ressemble à l'écran « Salle sur mesure » (mêmes compteurs de rôles, même aperçu du plan),
-// mais part du plan prévu : on ne retire ou n'ajoute que ce qui change, les autres sièges restent en place.
+// mais part de la salle choisie : on ne retire ou n'ajoute que ce qui change, les autres sièges restent en place.
+// « Valider la salle » enregistre les changements : la salle modifiée remplace la salle de base (remplacerSalle).
 // Les règles (limites, cartes disponibles, plan valide) sont dans src/engine/ajustement.ts.
 import {
   MAX_JOUEURS,
@@ -21,17 +22,17 @@ import {
 import { ORDRE_ROLES, apercuSalle, bouton, echapper, ligneRole } from './composants-salle';
 
 export interface EtatAjustement {
-  /** Plan prévu, tel qu'il était avant toute modification. */
+  /** Salle de base, telle qu'elle était avant toute modification (elle sera remplacée à la validation). */
   prevu: Plan;
-  /** Plan de ce soir, en cours de modification. */
+  /** Salle en cours de modification. */
   plan: Plan;
-  /** Nombre de joueurs présents ce soir : il faut autant de rôles. */
+  /** Nombre de joueurs voulu : il faut autant de rôles. */
   nbVise: number;
   /** Premier siège touché pour un échange de rôles. */
   siegeChoisi: number | null;
   /** Prénoms qui suivent les sièges (retirer le siège 7 fait remonter ceux des sièges 8, 9…). */
   prenoms: string[];
-  /** Prénoms d'avant toute modification, remis si on revient au plan prévu. */
+  /** Prénoms d'avant toute modification, remis avec « Annuler les changements ». */
   prenomsPrevus: string[];
   erreur: string | null;
 }
@@ -48,7 +49,7 @@ export function nouvelAjustement(prevu: Plan, prenoms: string[]): EtatAjustement
   };
 }
 
-/** Le plan est prêt pour ce soir : autant de rôles que de joueurs, et jouable. */
+/** Le plan est prêt à être validé : autant de rôles que de joueurs, et jouable. */
 export function ajustementPret(a: EtatAjustement): boolean {
   return a.plan.nbJoueurs === a.nbVise && validerPlan(a.plan).length === 0;
 }
@@ -77,9 +78,9 @@ export function ecranAjustement(a: EtatAjustement): string {
     <main class="generateur">
       <section class="carte">
         <h2>Salle</h2>
-        <p>${echapper(a.prevu.salle)} <span class="max">— prévue à ${a.prevu.nbJoueurs} joueurs</span></p>
+        <p>${echapper(a.prevu.salle)} <span class="max">— actuellement ${a.prevu.nbJoueurs} joueurs</span></p>
 
-        <h2>Nombre de joueurs ce soir</h2>
+        <h2>Nombre de joueurs</h2>
         <div class="compteur grand">
           ${bouton('−', `data-aj-nb="-1" aria-label="Un joueur de moins" ${a.nbVise <= MIN_JOUEURS ? 'disabled' : ''}`, 'rond')}
           <strong>${a.nbVise}</strong>
@@ -103,7 +104,7 @@ export function ecranAjustement(a: EtatAjustement): string {
         ${apercuSalle('aj', plan, a.siegeChoisi)}
         <div class="choix-ligne">
           ${bouton('Mélanger les rôles', 'data-aj-melanger')}
-          ${bouton('Revenir au plan prévu', 'data-aj-reinitialiser', 'discret')}
+          ${bouton('Annuler les changements', 'data-aj-reinitialiser', 'discret')}
         </div>
       </section>
 
@@ -113,6 +114,8 @@ export function ecranAjustement(a: EtatAjustement): string {
       <div class="choix-ligne">
         ${bouton('Valider la salle', `data-aj-valider ${pret ? '' : 'disabled'}`, 'principal')}
       </div>
+      <p class="max">Valider enregistre les changements : « ${echapper(a.prevu.salle)} » à ${a.prevu.nbJoueurs} joueurs
+        ${a.plan.nbJoueurs === a.prevu.nbJoueurs ? 'est mise à jour' : `est remplacée par la salle à ${a.plan.nbJoueurs} joueurs`}.</p>
     </main>`;
 }
 
@@ -161,18 +164,3 @@ export function clicAjustement(a: EtatAjustement, d: DOMStringMap): ResultatAjus
 export function deplacerDansAjustement(a: EtatAjustement, numero: number, position: { x: number; y: number }): void {
   a.plan = deplacerSiege(a.plan, numero, position);
 }
-
-/** Bandeau de l'écran de choix quand la salle a été modifiée pour ce soir. */
-export function resumeAjustement(a: EtatAjustement): string {
-  const ecart = a.plan.nbJoueurs - a.prevu.nbJoueurs;
-  return `
-    <section class="carte">
-      <h2>Salle modifiée pour ce soir : ${a.plan.nbJoueurs} joueurs
-        <span class="max">(prévue à ${a.prevu.nbJoueurs}${ecart === 0 ? '' : `, ${ecart > 0 ? '+' : ''}${ecart}`})</span></h2>
-      <div class="choix-ligne">
-        ${bouton('✏️ Reprendre la modification', 'data-modifier-salle')}
-        ${bouton('Revenir au plan prévu', 'data-plan-prevu', 'discret')}
-      </div>
-    </section>`;
-}
-

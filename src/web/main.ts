@@ -25,6 +25,7 @@ import {
   annuler,
   decoderPlan,
   memoriser,
+  remplacerSalle,
   PARAM_PARTAGE,
 } from '../engine';
 import { consigneReveil, modeSaisie } from './consignes';
@@ -41,7 +42,6 @@ import {
   deplacerDansAjustement,
   ecranAjustement,
   nouvelAjustement,
-  resumeAjustement,
   type EtatAjustement,
 } from './ajustement';
 import { densite } from './densite';
@@ -57,11 +57,21 @@ import './style.css';
 
 const CLE_SAUVEGARDE = 'malediction:partie';
 const CLE_PLANS = 'malediction:plans';
-/** Salle modifiée pour ce soir (« Modifier la salle »), gardée si l'appli est fermée avant la partie. */
-const CLE_AJUSTEMENT = 'malediction:salle-modifiee';
+/** Plans du code remplacés par une salle modifiée (« Modifier la salle ») : on ne les montre plus. */
+const CLE_PLANS_REMPLACES = 'malediction:plans-remplaces';
 
-/** Salles créées avec le générateur, gardées dans le navigateur. */
+/** Salles créées avec le générateur (ou modifiées), gardées dans le navigateur. */
 let plansPerso: Plan[] = lirePlansPerso();
+/** Identifiants des plans du code remplacés par une salle modifiée. */
+let plansRemplaces: string[] = lireListe(CLE_PLANS_REMPLACES);
+
+function lireListe(cle: string): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(cle) ?? '[]') as string[];
+  } catch {
+    return [];
+  }
+}
 
 function lirePlansPerso(): Plan[] {
   try {
@@ -74,6 +84,7 @@ function lirePlansPerso(): Plan[] {
 function ecrirePlansPerso(): void {
   try {
     localStorage.setItem(CLE_PLANS, JSON.stringify(plansPerso));
+    localStorage.setItem(CLE_PLANS_REMPLACES, JSON.stringify(plansRemplaces));
   } catch {
     // Stockage indisponible : la salle reste disponible jusqu'à la fermeture.
   }
@@ -81,10 +92,13 @@ function ecrirePlansPerso(): void {
 
 /**
  * Plans saisis dans le code (ou de démo s'il n'y en a pas), puis les salles sur mesure.
- * Une salle sur mesure enregistrée sous le même nom et le même nombre de joueurs remplace le plan du code.
+ * Une salle sur mesure enregistrée sous le même nom et le même nombre de joueurs remplace le plan du code,
+ * et un plan du code modifié (« Modifier la salle ») n'est plus montré.
  */
 function tousLesPlans(): Plan[] {
-  const code = (PLANS.length > 0 ? PLANS : PLANS_DEMO).filter((p) => !estPerso(p.salle, p.nbJoueurs));
+  const code = (PLANS.length > 0 ? PLANS : PLANS_DEMO).filter(
+    (p) => !estPerso(p.salle, p.nbJoueurs) && !plansRemplaces.includes(p.id),
+  );
   return [...code, ...plansPerso];
 }
 
@@ -145,8 +159,6 @@ interface Ui {
   cameraEnPanne: boolean;
   /** Message de réussite sur l'écran de choix ou de partage (salle ajoutée, lien copié). */
   info: string | null;
-  /** Salle modifiée et validée pour ce soir (joueurs en plus ou en moins), null = plan prévu tel quel. */
-  ajustement: EtatAjustement | null;
   /** Écran « Modifier la salle » ouvert (null = fermé). */
   modifSalle: EtatAjustement | null;
   /** Saisie du vote : à main levée (nombre de mains par joueur) ou voix par voix (qui vote contre qui). */
@@ -169,7 +181,6 @@ const ui: Ui = {
   scanner: false,
   cameraEnPanne: false,
   info: null,
-  ajustement: null,
   modifSalle: null,
   modeVote: 'mains',
   mains: {},
@@ -193,30 +204,6 @@ function sauvegarder(): void {
     else localStorage.removeItem(CLE_SAUVEGARDE);
   } catch {
     // Stockage indisponible (navigation privée…) : tant pis, la partie reste en mémoire.
-  }
-}
-
-/** Garde la salle modifiée pour ce soir (ou l'oublie quand il n'y en a plus). */
-function sauvegarderAjustement(): void {
-  try {
-    if (ui.ajustement) localStorage.setItem(CLE_AJUSTEMENT, JSON.stringify(ui.ajustement));
-    else localStorage.removeItem(CLE_AJUSTEMENT);
-  } catch {
-    // Stockage indisponible : la modification reste en mémoire jusqu'à la fermeture.
-  }
-}
-
-/** Retrouve la salle modifiée pour ce soir et la resélectionne sur l'écran de choix. */
-function restaurerAjustement(): void {
-  try {
-    const brut = localStorage.getItem(CLE_AJUSTEMENT);
-    if (!brut) return;
-    const a = JSON.parse(brut) as EtatAjustement;
-    ui.ajustement = a;
-    ui.salle = a.prevu.salle;
-    ui.nbJoueurs = a.prevu.nbJoueurs;
-  } catch {
-    // Sauvegarde illisible : on repart du plan prévu.
   }
 }
 
@@ -378,8 +365,7 @@ function ecranChoix(): string {
   const plans = tousLesPlans();
   const salles = sallesDisponibles(plans);
   const nombres = nombresDeJoueurs(ui.salle, plans);
-  const nbCeSoir = ui.ajustement?.plan.nbJoueurs ?? ui.nbJoueurs;
-  const champsPrenoms = Array.from({ length: nbCeSoir }, (_, i) => {
+  const champsPrenoms = Array.from({ length: ui.nbJoueurs }, (_, i) => {
     const valeur = echapper(ui.prenoms[i] ?? '');
     return `<label class="prenom"><span>${i + 1}</span><input data-prenom="${i}" value="${valeur}" placeholder="Prénom (facultatif)" autocomplete="off"></label>`;
   }).join('');
@@ -402,13 +388,7 @@ function ecranChoix(): string {
           .map((n) => bouton(String(n), `data-nb="${n}"`, n === ui.nbJoueurs ? 'actif' : ''))
           .join('')}</div>
         <div class="choix-ligne">
-          ${
-            ui.nbJoueurs === 0
-              ? ''
-              : ui.ajustement
-                ? bouton(`✏️ Modifier la salle (modifiée : ${ui.ajustement.plan.nbJoueurs} joueurs)`, 'data-modifier-salle', 'actif')
-                : bouton('✏️ Modifier la salle (joueurs en plus ou en moins)', 'data-modifier-salle')
-          }
+          ${ui.nbJoueurs > 0 ? bouton('✏️ Modifier la salle (joueurs en plus ou en moins)', 'data-modifier-salle') : ''}
           ${bouton('🛠️ Salle sur mesure', 'data-ouvrir-generateur')}
           ${bouton('📷 Scanner une salle', 'data-scanner')}
           ${estPerso(ui.salle, ui.nbJoueurs) ? bouton('Partager (QR code)', 'data-partager') : ''}
@@ -416,10 +396,9 @@ function ecranChoix(): string {
         </div>
       </section>
       ${ui.info ? `<p class="info">${echapper(ui.info)}</p>` : ''}
-      ${ui.ajustement ? resumeAjustement(ui.ajustement) : ''}
       ${ui.nbJoueurs > 0 ? `<section class="carte"><h2>Prénoms</h2><div class="prenoms">${champsPrenoms}</div></section>` : ''}
       ${ui.erreur ? `<p class="erreur">${echapper(ui.erreur)}</p>` : ''}
-      ${bouton(`Commencer la partie${nbCeSoir > 0 ? ` à ${nbCeSoir}` : ''}`, 'data-commencer', 'principal')}
+      ${bouton(`Commencer la partie${ui.nbJoueurs > 0 ? ` à ${ui.nbJoueurs}` : ''}`, 'data-commencer', 'principal')}
     </main>`;
 }
 
@@ -832,7 +811,6 @@ const moinsDAnimations = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 function afficher(): void {
   if (!ui.scanner) arreterScan();
-  sauvegarderAjustement();
   app.innerHTML = ui.generateur
     ? ecranGenerateur(ui.generateur)
     : ui.modifSalle
@@ -929,11 +907,34 @@ function valider(): void {
   }
 }
 
-/** « Valider la salle » : le plan modifié sert pour la partie de ce soir (il n'est pas gardé comme salle). */
-function finirModifSalle(a: EtatAjustement): void {
+/**
+ * « Valider la salle » : les changements sont enregistrés et la salle modifiée remplace la salle de base
+ * (ex. « Clown » à 15 devient « Clown » à 13). Elle est sélectionnée sur l'écran de choix.
+ * Renvoie false si le MJ refuse d'écraser une autre salle du même nom (on reste dans l'écran).
+ */
+function finirModifSalle(a: EtatAjustement): boolean {
+  const ancienne = a.prevu;
+  const nb = a.plan.nbJoueurs;
+  const autre = nb !== ancienne.nbJoueurs && tousLesPlans().some((p) => p.salle === ancienne.salle && p.nbJoueurs === nb);
+  if (autre && !confirm(`Il existe déjà une salle « ${ancienne.salle} » à ${nb} joueurs. La remplacer par celle-ci ?`)) {
+    return false;
+  }
+  // Plans du code (ancienne salle, ou autre salle écrasée) : on les cache, ils ne s'effacent pas.
+  for (const p of PLANS.length > 0 ? PLANS : PLANS_DEMO) {
+    const touche = p.salle === ancienne.salle && (p.nbJoueurs === ancienne.nbJoueurs || p.nbJoueurs === nb);
+    if (touche && !plansRemplaces.includes(p.id)) plansRemplaces = [...plansRemplaces, p.id];
+  }
+  plansPerso = remplacerSalle(plansPerso, ancienne, a.plan);
+  ecrirePlansPerso();
+  ui.salle = ancienne.salle;
+  ui.nbJoueurs = nb;
   ui.prenoms = a.prenoms;
-  ui.ajustement = a;
+  ui.info =
+    nb === ancienne.nbJoueurs
+      ? `Salle « ${ancienne.salle} » enregistrée.`
+      : `Salle « ${ancienne.salle} » enregistrée à ${nb} joueurs (au lieu de ${ancienne.nbJoueurs}).`;
   ui.modifSalle = null;
+  return true;
 }
 
 app.addEventListener('click', (evt) => {
@@ -1018,32 +1019,21 @@ app.addEventListener('click', (evt) => {
   } else if (d.salle !== undefined) {
     ui.salle = d.salle;
     ui.nbJoueurs = nombresDeJoueurs(ui.salle, tousLesPlans())[0] ?? 0;
-    if (ui.ajustement) ui.prenoms = ui.ajustement.prenomsPrevus; // autre plan : la modification est oubliée
-    ui.ajustement = null;
   } else if (d.nb !== undefined) {
     ui.nbJoueurs = Number(d.nb);
-    if (ui.ajustement) ui.prenoms = ui.ajustement.prenomsPrevus; // autre plan : la modification est oubliée
-    ui.ajustement = null;
   } else if (d.modifierSalle !== undefined) {
     try {
-      // On repart de la salle déjà modifiée ce soir s'il y en a une, sinon du plan prévu.
-      ui.modifSalle = ui.ajustement
-        ? { ...structuredClone(ui.ajustement), prenoms: [...ui.prenoms] } // prénoms tapés depuis la validation
-        : nouvelAjustement(choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans()), ui.prenoms);
+      ui.modifSalle = nouvelAjustement(choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans()), ui.prenoms);
     } catch (e) {
       ui.erreur = e instanceof Error ? e.message : String(e);
     }
-  } else if (d.planPrevu !== undefined && ui.ajustement) {
-    ui.prenoms = ui.ajustement.prenomsPrevus;
-    ui.ajustement = null;
   } else if (d.commencer !== undefined) {
     try {
-      const plan = ui.ajustement?.plan ?? choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans());
+      const plan = choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans());
       const prenoms = Array.from({ length: plan.nbJoueurs }, (_, i) => ui.prenoms[i] || null);
       ui.etat = creerPartie(plan, prenoms);
       ui.plan = plan;
       ui.historique = [];
-      ui.ajustement = null;
       viderSaisie();
       sauvegarder();
       void garderEcranAllume();
@@ -1165,7 +1155,6 @@ function importerDepuisLien(): void {
 }
 
 restaurer();
-restaurerAjustement();
 importerDepuisLien();
 afficher();
 void garderEcranAllume();

@@ -8,6 +8,7 @@ import {
   equilibreSpectres,
   melangerRoles,
   placeLibre,
+  remplacerSalle,
   retirerRole,
   retirerSiege,
   validerPlan,
@@ -132,5 +133,32 @@ describe('modifier la salle rôle par rôle (comme la salle sur mesure)', () => 
     expect(melange.sieges.map((s) => s.position)).toEqual(plan.sieges.map((s) => s.position));
     expect(melange.sieges.map((s) => s.role).sort()).toEqual(plan.sieges.map((s) => s.role).sort());
     expect(melange.sieges.map((s) => s.role)).not.toEqual(plan.sieges.map((s) => s.role));
+  });
+});
+
+describe('valider la salle modifiée : elle remplace la salle de base', () => {
+  const salle15 = { ...ajouterRole(ajouterRole(ajouterRole(PLAN_COMPLET, 'pelerin'), 'medium'), 'augure'), salle: 'Clown', id: 'Clown-15' };
+  const autre = { ...PLAN_COMPLET, salle: 'Grange', id: 'Grange-12' };
+
+  it('15 → 13 : la salle à 15 disparaît, celle à 13 la remplace', () => {
+    const modifiee = retirerRole(retirerRole(salle15, 'augure').plan, 'medium').plan;
+    const apres = remplacerSalle([autre, salle15], salle15, modifiee);
+    expect(apres.map((p) => p.id)).toEqual(['Grange-12', 'Clown-13']);
+    expect(apres[1]).toMatchObject({ salle: 'Clown', nbJoueurs: 13 });
+  });
+
+  it('même nombre de joueurs (rôles échangés) : la salle est simplement mise à jour', () => {
+    const modifiee = melangerRoles(salle15, () => 0);
+    const apres = remplacerSalle([salle15], salle15, modifiee);
+    expect(apres).toHaveLength(1);
+    expect(apres[0].sieges).toEqual(modifiee.sieges);
+  });
+
+  it('une salle du même nom au nouveau nombre de joueurs est écrasée', () => {
+    const clown13 = { ...retirerRole(retirerRole(salle15, 'augure').plan, 'pelerin').plan, id: 'Clown-13' };
+    const modifiee = retirerRole(retirerRole(salle15, 'augure').plan, 'medium').plan;
+    const apres = remplacerSalle([clown13, salle15], salle15, modifiee);
+    expect(apres.map((p) => p.id)).toEqual(['Clown-13']);
+    expect(apres[0].sieges).toEqual(modifiee.sieges);
   });
 });

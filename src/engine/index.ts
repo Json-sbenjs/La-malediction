@@ -76,6 +76,7 @@ export {
   equilibreSpectres,
   melangerRoles,
   placeLibre,
+  remplacerSalle,
   retirerRole,
   retirerSiege,
   tailleGroupe,

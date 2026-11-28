@@ -13,18 +13,17 @@ La victoire est vérifiée après chaque action du MJ qui peut tuer quelqu'un (f
 1. Le MJ choisit la salle et le nombre de joueurs, ce qui charge un **plan de salle** (un rôle par siège).
    Il peut aussi utiliser la **salle sur mesure** : composition conseillée, forme de la salle (tour de table, table rectangulaire, U) et tirage des rôles.
    **Modifier la salle** (le groupe annoncé à 15 arrive à 13 ou à 16) : bouton « ✏️ Modifier la salle » sur l'écran de choix.
-   L'écran ressemble à « Salle sur mesure » (mêmes compteurs et même aperçu, `src/web/composants-salle.ts`), mais part du plan prévu :
-   - **Nombre de joueurs ce soir** (− / +, de 8 à 25) ;
+   L'écran ressemble à « Salle sur mesure » (mêmes compteurs et même aperçu, `src/web/composants-salle.ts`), mais part de la salle choisie :
+   - **Nombre de joueurs** (− / +, de 8 à 25) ;
    - **Rôles `total / joueurs`** : « − » retire le siège de ce rôle qui a le plus grand numéro (les sièges suivants sont renumérotés, les prénoms suivent),
      « + » ajoute un siège de ce rôle à une place libre. La Trinité et les Doubles s'ajoutent et se retirent en entier ;
    - **Plan** : toucher deux sièges échange leurs rôles, l'appui long déplace un siège, « Mélanger les rôles » retire les rôles sans bouger les sièges.
    L'appli ne choisit jamais à la place du MJ quel rôle enlever ou ajouter ; elle affiche les Spectres conseillés pour ce nombre de joueurs.
    « Valider la salle » n'est possible qu'avec autant de rôles que de joueurs et un plan valide (`validerPlan`).
-   Le plan modifié sert pour la partie de ce soir ; il n'est pas gardé comme nouvelle salle.
-   Après validation, le bouton devient « ✏️ Modifier la salle (modifiée : 13 joueurs) » : il rouvre l'écran **avec les modifications déjà faites**,
-   pour corriger ce qui n'allait pas. La salle modifiée est gardée même si l'appli est fermée avant la partie
-   (`localStorage`, clé `malediction:salle-modifiee`) ; elle est oubliée quand la partie commence, quand on change de salle ou de nombre de joueurs, ou avec « Revenir au plan prévu ».
-   « Revenir au plan prévu » annule tout (prénoms compris).
+   **Valider enregistre les changements et remplace la salle de base** (`remplacerSalle`) : « Clown » à 15 devient « Clown » à 13,
+   la salle à 15 n'apparaît plus et celle à 13 est sélectionnée. Si une autre salle « Clown » à 13 existait déjà, l'appli demande avant de l'écraser.
+   Un plan écrit dans le code n'est pas effacé : il est caché (`localStorage`, clé `malediction:plans-remplaces`) et la salle modifiée prend sa place.
+   « Annuler les changements » (dans l'écran) ou « Annuler » (en haut) ne touchent pas à la salle de base.
 2. Prénoms des joueurs : facultatifs.
 3. Si le **Dévoué** est en jeu, le MJ montre sa carte à tout le monde.
 4. Si l'**Alpha** est une carte posée sur un siège, son porteur est Alpha d'office.

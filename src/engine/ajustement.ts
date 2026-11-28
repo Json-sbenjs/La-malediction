@@ -131,3 +131,19 @@ export function equilibreSpectres(plan: Plan): { actuels: number; conseilles: nu
     return { actuels, conseilles: null }; // nombre de joueurs hors des limites
   }
 }
+
+/** Même salle et même nombre de joueurs : c'est le même plan sur l'écran de choix. */
+function memePlace(a: Plan, b: Plan): boolean {
+  return a.salle === b.salle && a.nbJoueurs === b.nbJoueurs;
+}
+
+/**
+ * « Valider la salle » : la salle modifiée remplace la salle de base.
+ * Renvoie la nouvelle liste de salles : l'ancienne est retirée, ainsi qu'une autre salle
+ * du même nom au nouveau nombre de joueurs (l'interface demande avant de l'écraser).
+ * L'identifiant suit le nom et le nombre de joueurs (`Salle-13`).
+ */
+export function remplacerSalle(plans: Plan[], ancienne: Plan, modifiee: Plan): Plan[] {
+  const nouvelle: Plan = { ...modifiee, salle: ancienne.salle, id: `${ancienne.salle}-${modifiee.nbJoueurs}` };
+  return [...plans.filter((p) => !memePlace(p, ancienne) && !memePlace(p, nouvelle)), nouvelle];
+}
