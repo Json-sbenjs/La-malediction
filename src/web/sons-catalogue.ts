@@ -90,7 +90,7 @@ export const DESCRIPTION_ROLES: Record<RoleId, string> = {
   anatheme: "Impact sombre qui résonne.",
   adepte: "Carillon à vent.",
   usurpateur: "Lame qui frotte.",
-  alpha: "Appel de cor de chasse.",
+  alpha: "Deux appels francs de cor de chasse, plus forts que les autres réveils.",
   trinite: "Trois notes de piano qui forment un accord.",
   doubles: "Deux cliquetis métalliques qui se répondent.",
   augure: "Croassements de corbeau.",

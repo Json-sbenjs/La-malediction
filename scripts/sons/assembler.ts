@@ -9,6 +9,7 @@
 // 4. encode en MP3 (il faut ffmpeg) ;
 // 5. réécrit la partie « Sons » de CREDITS.md à partir des sources utilisées.
 import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -22,9 +23,14 @@ const CACHE = join(RACINE, '.cache/sons-sources');
 
 // ─── Sources : téléchargement et décodage ─────────────────────────────
 
+/**
+ * Fichier en cache d'une source. Le nom contient une empreinte de l'adresse : si on change l'adresse
+ * d'une source dans sources.ts, l'ancien fichier n'est plus utilisé et le nouveau est téléchargé.
+ */
 function cheminCache(id: IdSource): string {
   const extension = SOURCES[id].url.split('.').pop()!.split('?')[0];
-  return join(CACHE, `${id}.${extension}`);
+  const empreinte = createHash('sha1').update(SOURCES[id].url).digest('hex').slice(0, 8);
+  return join(CACHE, `${id}-${empreinte}.${extension}`);
 }
 
 async function telecharger(id: IdSource): Promise<void> {

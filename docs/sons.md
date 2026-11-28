@@ -92,7 +92,7 @@ Joué quand le rôle est présenté (nuit d'explication), quand il se réveille 
 | anatheme | Impact sombre qui résonne. | DSGNImpt_ImpactCreepyReverb_OS_02 (Oculus VR, LLC, CC BY 4.0) | `sons/roles/role_anatheme.mp3` |
 | adepte | Carillon à vent. | MUSCChim_WindChimes_LOOP_02 (Oculus VR, LLC, CC BY 4.0) | `sons/roles/role_adepte.mp3` |
 | usurpateur | Lame qui frotte. | WEAPSwrd_SwordScrape_OS_01 (Oculus VR, LLC, CC BY 4.0) | `sons/roles/role_usurpateur.mp3` |
-| alpha | Appel de cor de chasse. | Hunt Horn (Countrychap999, CC0 1.0) | `sons/roles/role_alpha.mp3` |
+| alpha | Deux appels francs de cor de chasse, plus forts que les autres réveils. | hunting-horn-bass (nanoPlink, CC0 1.0) | `sons/roles/role_alpha.mp3` |
 | trinite | Trois notes de piano qui forment un accord. | Meta Piano D3 (Meta Creative Audio, CC0 1.0) + Meta Piano F3 (Meta Creative Audio, CC0 1.0) + Meta Piano A3 (Meta Creative Audio, CC0 1.0) | `sons/roles/role_trinite.mp3` |
 | doubles | Deux cliquetis métalliques qui se répondent. | RPG Audio — metal_click (Kenney (kenney.nl), CC0 1.0) | `sons/roles/role_doubles.mp3` |
 | augure | Croassements de corbeau. | Crow (fvcalderan (OpenGameArt), CC0 1.0) | `sons/roles/role_augure.mp3` |

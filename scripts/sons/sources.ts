@@ -136,7 +136,7 @@ export const SOURCES = {
   serpent: freesound(553374, '553/553374_3940234', 'Snake Hiss', 'xoiziox'),
   grincement: oculus('WOODFric_CreaksCreepyReverb_OS_01'),
   epeeFrotte: oculus('WEAPSwrd_SwordScrape_OS_01'),
-  cor: freesound(69206, '69/69206_993824', 'Hunt Horn', 'Countrychap999'),
+  cor: freesound(148645, '148/148645_2674593', 'hunting-horn-bass', 'nanoPlink'),
   cliquetisMetal: kenney('metal_click'),
   corbeau: {
     url: brut('zuujis-cc0/opengameart-sound-effect', 'crow/crow_0.ogg'),

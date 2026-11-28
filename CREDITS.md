@@ -17,7 +17,6 @@ sous le tableau doit accompagner l'appli.
 | funeral bell-cloche funèbre | aoristos | [source](https://freesound.org/s/329324/) | CC0 1.0 | oui (coupé, volume) | `sfx_glas`, `sfx_mort`, `fin_personne`, `role_sacrifie` |
 | 06 Speyer Cathedral Choir in Eastern Choir | blaukreuz | [source](https://freesound.org/s/131113/) | CC0 1.0 | oui (coupé, volume) | `role_sainte` |
 | Owl Hoot | Breviceps | [source](https://freesound.org/s/465697/) | CC0 1.0 | oui (coupé, volume) | `tr_nuit_tombe` |
-| Hunt Horn | Countrychap999 | [source](https://freesound.org/s/69206/) | CC0 1.0 | oui (coupé, volume) | `role_alpha` |
 | Burt's Requiem | freepd.com | [source](https://freepd.com/) | CC0 1.0 | oui (coupé, volume) | `musique_requiem` |
 | Creepy Hallow | freepd.com | [source](https://freepd.com/) | CC0 1.0 | oui (coupé, volume) | `musique_creux` |
 | Evil Incoming | freepd.com | [source](https://freepd.com/) | CC0 1.0 | oui (coupé, volume) | `musique_malefique` |
@@ -44,6 +43,7 @@ sous le tableau doit accompagner l'appli.
 | Meta Piano A3 | Meta Creative Audio | [source](https://github.com/facebookincubator/Meta-open-sound) | CC0 1.0 | oui (coupé, volume) | `role_trinite` |
 | Meta Piano D3 | Meta Creative Audio | [source](https://github.com/facebookincubator/Meta-open-sound) | CC0 1.0 | oui (coupé, volume) | `role_trinite` |
 | Meta Piano F3 | Meta Creative Audio | [source](https://github.com/facebookincubator/Meta-open-sound) | CC0 1.0 | oui (coupé, volume) | `role_trinite` |
+| hunting-horn-bass | nanoPlink | [source](https://freesound.org/s/148645/) | CC0 1.0 | oui (coupé, volume) | `role_alpha` |
 | AMBForst_Night_LOOP_01 | Oculus VR, LLC | [source](https://github.com/facebookincubator/Meta-open-sound/tree/main/corpora/oculus-audio-pack) | CC BY 4.0 | oui (coupé, volume) | `amb_nuit` |
 | CHAINMvmt_ChainsCreepy_OS_01 | Oculus VR, LLC | [source](https://github.com/facebookincubator/Meta-open-sound/tree/main/corpora/oculus-audio-pack) | CC BY 4.0 | oui (coupé, volume) | `role_necromancien` |
 | CLOCKTick_ClockCreepyReverb_OS_01 | Oculus VR, LLC | [source](https://github.com/facebookincubator/Meta-open-sound/tree/main/corpora/oculus-audio-pack) | CC BY 4.0 | oui (coupé, volume) | `role_envouteur` |

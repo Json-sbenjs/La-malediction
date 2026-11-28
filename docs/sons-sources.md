@@ -6,7 +6,7 @@ de sons de zéro (voir `docs/sons.md`).
 
 **Intégré le 27/11/2026** : les bases réellement utilisées, avec leur licence vérifiée, sont dans `scripts/sons/sources.ts`
 et `CREDITS.md`. Les 4 manques de la recherche GitHub ont été comblés sur Freesound (CC0) : glas (« funeral bell-cloche
-funèbre », aoristos), sifflement de serpent (« Snake Hiss », xoiziox), cor de chasse (« Hunt Horn », Countrychap999), et la
+funèbre », aoristos), sifflement de serpent (« Snake Hiss », xoiziox), cor de chasse (« hunting-horn-bass », nanoPlink ; « Hunt Horn » de Countrychap999, une note tenue, a été écarté), et la
 Trinité est faite de trois notes du piano Meta (CC0). Ce document garde la recherche et les autres pistes.
 
 Avant d'intégrer un fichier : **vérifier la licence** dans le dépôt source, puis noter titre, auteur, URL, licence et

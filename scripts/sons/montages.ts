@@ -122,7 +122,8 @@ export const MONTAGES: Record<IdSon, Montage> = {
   role_anatheme: { couches: [c('impactCreepy2')] },
   role_adepte: { couches: [c('carillonVent2', { duree: 4, fonduEntree: 0.3, fonduSortie: 1.5 })] },
   role_usurpateur: { couches: [c('epeeFrotte')] },
-  role_alpha: { couches: [c('cor', { duree: 3.5, fonduSortie: 1 })] },
+  // Deux appels francs de cor de chasse, plus forts que les autres réveils (l'Alpha, le maire, se fait entendre).
+  role_alpha: { couches: [c('cor', { fonduSortie: 0.3 })], reverb: 0.25, niveau: -16 },
   role_trinite: { couches: arpege(['pianoD3', 'pianoF3', 'pianoA3'], 0.35, 3.5) },
   role_doubles: { couches: [c('cliquetisMetal'), c('cliquetisMetal', { a: 0.25, gain: 0.6 })] },
   role_augure: { couches: [c('corbeau'), c('corbeau', { a: 0.7, gain: 0.8 })] },
