@@ -1,6 +1,6 @@
-// Générateur de salle : rester appuyé sur un siège, puis le faire glisser
-// pour le placer comme dans la vraie salle. Un appui court garde son rôle :
-// toucher deux sièges échange leurs rôles.
+// Générateur de salle et ajustement avant la partie : rester appuyé sur un siège,
+// puis le faire glisser pour le placer comme dans la vraie salle. Un appui court reste un simple toucher
+// (échange de rôles dans le générateur, choix du siège dans l'ajustement).
 
 /** Durée d'appui avant de pouvoir déplacer un siège (ms). */
 const APPUI_LONG = 350;
@@ -30,7 +30,7 @@ export function clicApresDeplacement(): boolean {
 }
 
 /**
- * Active le déplacement des sièges marqués `data-deplacable` dans `racine`.
+ * Active le déplacement des sièges marqués `data-deplacable="<numéro du siège>"` dans `racine`.
  * `deplace` reçoit le numéro du siège et sa nouvelle position quand on le lâche
  * (null si le geste est interrompu : il suffit alors de réafficher).
  */
@@ -73,7 +73,7 @@ export function activerDeplacement(
       if (!saisi) return;
       siege.classList.remove('saisi');
       ignorerClic = true; // le clic qui suit le lâcher n'est pas un échange de rôles
-      deplace(Number(siege.dataset.genSiege), valider ? position : null);
+      deplace(Number(siege.dataset.deplacable), valider ? position : null);
     };
     const lacher = (e: PointerEvent) => e.pointerId === evt.pointerId && finir(true);
     const annuler = (e: PointerEvent) => e.pointerId === evt.pointerId && finir(false);

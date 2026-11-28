@@ -18,6 +18,16 @@ Règles des positions :
 - Changer la **forme** ou le **nombre de joueurs** oublie les déplacements : on repart de la disposition de la forme.
 - La correspondance entre position et écran est la même partout (`.siege` dans `style.css`, et `versPlan` dans `src/web/deplacement.ts` qui fait l'inverse).
 
+## Modifier une salle
+
+Si le groupe n'a pas le nombre prévu, pas besoin de recréer une salle : écran de choix → « ✏️ Modifier la salle ».
+Même écran que « Salle sur mesure », mais on part de la salle choisie : on règle le nombre de joueurs, puis les rôles avec − / +
+jusqu'à avoir autant de rôles que de joueurs (détail dans `deroule-partie.md`, § 1).
+
+« Valider la salle » **enregistre les changements et remplace la salle de base** : « Clown » à 15 devient « Clown » à 13
+(la salle à 15 n'apparaît plus). S'il existait déjà une « Clown » à 13, l'appli demande avant de l'écraser.
+La salle modifiée est une salle sur mesure comme les autres : on peut la partager par QR code ou la modifier à nouveau.
+
 ## Partager une salle (QR code)
 
 Les salles sont gardées par appareil. Pour passer une salle d'un appareil à un autre (ex. créée sur PC, jouée sur l'iPad) :

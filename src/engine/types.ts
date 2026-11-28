@@ -215,6 +215,11 @@ export type Action =
   // Jour
   | { type: 'elire-alpha'; cible: JoueurId }
   | { type: 'vote'; votes: Record<JoueurId, JoueurId | null> }
+  /**
+   * Vote à main levée : nombre de mains levées contre chaque joueur (l'Alpha compris),
+   * et le joueur contre qui l'Alpha a levé la main (sa voix compte double), ou null.
+   */
+  | { type: 'vote-main-levee'; mains: Record<JoueurId, number>; voteAlpha: JoueurId | null }
   /** Vote rapide : le MJ désigne directement le joueur éliminé, sans saisir chaque voix. */
   | { type: 'eliminer'; cible: JoueurId }
   // Effets à la mort

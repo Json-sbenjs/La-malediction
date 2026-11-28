@@ -10,10 +10,8 @@ export function sallesDisponibles(plans: Plan[] = PLANS): string[] {
 
 /** Nombres de joueurs prévus pour une salle, du plus petit au plus grand. */
 export function nombresDeJoueurs(salle: string, plans: Plan[] = PLANS): number[] {
-  return plans
-    .filter((p) => p.salle === salle)
-    .map((p) => p.nbJoueurs)
-    .sort((a, b) => a - b);
+  const nombres = plans.filter((p) => p.salle === salle).map((p) => p.nbJoueurs);
+  return [...new Set(nombres)].sort((a, b) => a - b);
 }
 
 /** Le MJ choisit la salle + le nombre de joueurs → on charge le plan. */
