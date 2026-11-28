@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ajouterRole,
   ajouterSiege,
   cartesRestantes,
   changerRole,
   creerPartie,
   equilibreSpectres,
+  melangerRoles,
   placeLibre,
+  retirerRole,
   retirerSiege,
   validerPlan,
 } from '../../src/engine';
@@ -92,5 +95,42 @@ describe('ajuster une salle avant de lancer la partie', () => {
 
   it('aide à l’équilibre : Spectres prévus et conseillés', () => {
     expect(equilibreSpectres(PLAN_COMPLET)).toEqual({ actuels: 2, conseilles: 3 });
+  });
+});
+
+describe('modifier la salle rôle par rôle (comme la salle sur mesure)', () => {
+  it('« − » sur un rôle retire son siège qui a le plus grand numéro', () => {
+    const { plan, retires } = retirerRole(PLAN_COMPLET, 'pelerin');
+    expect(retires).toEqual([12]);
+    expect(plan.nbJoueurs).toBe(11);
+    expect(plan.sieges.filter((s) => s.role === 'pelerin')).toHaveLength(2);
+    expect(() => retirerRole(PLAN_COMPLET, 'medium')).toThrow(/Aucun siège/);
+  });
+
+  it('« − » sur la Trinité retire les 3 membres', () => {
+    const plan = planDeTest(['spectre', 'trinite', 'pelerin', 'trinite', 'pelerin', 'trinite', 'pelerin', 'pelerin', 'pelerin', 'spectre', 'oracle']);
+    const { plan: ajuste, retires } = retirerRole(plan, 'trinite');
+    expect(retires).toEqual([6, 4, 2]);
+    expect(ajuste.nbJoueurs).toBe(8);
+    expect(validerPlan(ajuste)).toEqual([]);
+  });
+
+  it('« + » ajoute un siège, ou tout le groupe des Doubles', () => {
+    expect(ajouterRole(PLAN_COMPLET, 'medium').sieges[12]).toMatchObject({ numero: 13, role: 'medium' });
+    const avecDoubles = ajouterRole(PLAN_COMPLET, 'doubles');
+    expect(avecDoubles.nbJoueurs).toBe(14);
+    expect(validerPlan(avecDoubles)).toEqual([]);
+    expect(() => ajouterRole(PLAN_COMPLET, 'oracle')).toThrow(/déjà posées/);
+  });
+
+  it('mélanger les rôles garde les sièges à leur place', () => {
+    const plan = {
+      ...PLAN_COMPLET,
+      sieges: PLAN_COMPLET.sieges.map((s) => ({ ...s, position: { x: s.numero, y: 1 } })),
+    };
+    const melange = melangerRoles(plan, () => 0);
+    expect(melange.sieges.map((s) => s.position)).toEqual(plan.sieges.map((s) => s.position));
+    expect(melange.sieges.map((s) => s.role).sort()).toEqual(plan.sieges.map((s) => s.role).sort());
+    expect(melange.sieges.map((s) => s.role)).not.toEqual(plan.sieges.map((s) => s.role));
   });
 });

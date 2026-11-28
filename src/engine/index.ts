@@ -69,12 +69,16 @@ export {
 } from './generateur';
 export { MAX_JOUEURS, MIN_JOUEURS, compterRoles } from './plans';
 export {
+  ajouterRole,
   ajouterSiege,
   cartesRestantes,
   changerRole,
   equilibreSpectres,
+  melangerRoles,
   placeLibre,
+  retirerRole,
   retirerSiege,
+  tailleGroupe,
 } from './ajustement';
 export { PARAM_PARTAGE, decoderPlan, encoderPlan } from './partage';
 export { LIMITE_HISTORIQUE, annuler, memoriser, type Historique } from './historique';

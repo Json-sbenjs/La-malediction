@@ -3,7 +3,7 @@
 // puis lance la partie (et peut enregistrer le plan ajusté comme une nouvelle salle).
 // Le plan obtenu est vérifié par validerPlan au moment de lancer, pas à chaque retouche :
 // on peut passer par un état incomplet (ex. Trinité à 2 le temps de changer le 3e rôle).
-import { compositionConseillee, maxJoueursPossible } from './generateur';
+import { compositionConseillee, maxJoueursPossible, melanger } from './generateur';
 import { MAX_JOUEURS, MIN_JOUEURS, compterRoles, type Plan, type Siege } from './plans';
 import { ROLES } from './roles';
 import type { RoleId } from './types';
@@ -74,6 +74,51 @@ export function changerRole(plan: Plan, numero: number, role: RoleId): Plan {
   if (ROLES[role].jamaisDistribue) throw new Error(`${ROLES[role].nom} ne se pose pas sur un siège`);
   if (cartesRestantes(plan, role) <= 0) throw new Error(`Toutes les cartes « ${ROLES[role].nom} » sont déjà posées`);
   return { ...plan, sieges: plan.sieges.map((s) => (s.numero === numero ? { ...s, role } : s)) };
+}
+
+/** La Trinité va par 3 et les Doubles par 2 : on les ajoute ou les retire en entier. */
+export function tailleGroupe(role: RoleId): number {
+  return role === 'trinite' || role === 'doubles' ? ROLES[role].cartes : 1;
+}
+
+/**
+ * Ajoute un rôle (compteur « + » de l'écran Modifier la salle) : un siège de plus avec ce rôle,
+ * ou tout le groupe pour la Trinité et les Doubles.
+ */
+export function ajouterRole(plan: Plan, role: RoleId): Plan {
+  if (cartesRestantes(plan, role) < tailleGroupe(role)) {
+    throw new Error(`Toutes les cartes « ${ROLES[role].nom} » sont déjà posées`);
+  }
+  let resultat = plan;
+  for (let i = 0; i < tailleGroupe(role); i++) resultat = ajouterSiege(resultat, role);
+  return resultat;
+}
+
+/**
+ * Retire un rôle (compteur « − ») : le siège de ce rôle qui a le plus grand numéro, pour renuméroter
+ * le moins de sièges possible (tout le groupe pour la Trinité et les Doubles).
+ * Renvoie aussi les numéros retirés, dans l'ordre où on les a retirés (pour décaler les prénoms).
+ */
+export function retirerRole(plan: Plan, role: RoleId): { plan: Plan; retires: number[] } {
+  const nombre = plan.sieges.filter((s) => s.role === role).length;
+  if (nombre === 0) throw new Error(`Aucun siège « ${ROLES[role].nom} » à retirer`);
+  let resultat = plan;
+  const retires: number[] = [];
+  for (let i = 0; i < Math.min(tailleGroupe(role), nombre); i++) {
+    const dernier = Math.max(...resultat.sieges.filter((s) => s.role === role).map((s) => s.numero));
+    resultat = retirerSiege(resultat, dernier);
+    retires.push(dernier);
+  }
+  return { plan: resultat, retires };
+}
+
+/** Tire à nouveau les rôles au hasard sur les sièges, sans bouger les sièges. */
+export function melangerRoles(plan: Plan, alea: () => number = Math.random): Plan {
+  const roles = melanger(
+    plan.sieges.map((s) => s.role),
+    alea,
+  );
+  return { ...plan, sieges: plan.sieges.map((s, i) => ({ ...s, role: roles[i] })) };
 }
 
 /** Spectres prévus sur le plan, et le nombre conseillé pour ce nombre de joueurs (aide à l'équilibre). */

@@ -7,10 +7,6 @@ import {
   choisirPlan,
   compterMainsLevees,
   compterVotes,
-  ajouterSiege,
-  changerRole,
-  deplacerSiege,
-  retirerSiege,
   mortsVotent,
   creerPartie,
   etapeSuivante,
@@ -40,7 +36,14 @@ import {
   type EtatGenerateur,
 } from './generateur';
 import { activerDeplacement, clicApresDeplacement } from './deplacement';
-import { blocAjustement, nouvelAjustement, type EtatAjustement } from './ajustement';
+import {
+  clicAjustement,
+  deplacerDansAjustement,
+  ecranAjustement,
+  nouvelAjustement,
+  resumeAjustement,
+  type EtatAjustement,
+} from './ajustement';
 import { densite } from './densite';
 import { SI_PAS_D_IMAGE } from './images';
 import { arreterScan, demarrerScan, ecranPartage, ecranScanner, lienDePartage } from './partage';
@@ -140,8 +143,10 @@ interface Ui {
   cameraEnPanne: boolean;
   /** Message de réussite sur l'écran de choix ou de partage (salle ajoutée, lien copié). */
   info: string | null;
-  /** Plan retouché pour ce soir (joueurs en plus ou en moins), null = plan prévu tel quel. */
+  /** Salle modifiée et validée pour ce soir (joueurs en plus ou en moins), null = plan prévu tel quel. */
   ajustement: EtatAjustement | null;
+  /** Écran « Modifier la salle » ouvert (null = fermé). */
+  modifSalle: EtatAjustement | null;
   /** Saisie du vote : à main levée (nombre de mains par joueur) ou voix par voix (qui vote contre qui). */
   modeVote: 'mains' | 'voix';
   /** Vote à main levée : nombre de mains levées contre chaque joueur. */
@@ -163,6 +168,7 @@ const ui: Ui = {
   cameraEnPanne: false,
   info: null,
   ajustement: null,
+  modifSalle: null,
   modeVote: 'mains',
   mains: {},
   voteAlpha: null,
@@ -370,6 +376,7 @@ function ecranChoix(): string {
           .map((n) => bouton(String(n), `data-nb="${n}"`, n === ui.nbJoueurs ? 'actif' : ''))
           .join('')}</div>
         <div class="choix-ligne">
+          ${ui.nbJoueurs > 0 && !ui.ajustement ? bouton('✏️ Modifier la salle (joueurs en plus ou en moins)', 'data-modifier-salle') : ''}
           ${bouton('🛠️ Salle sur mesure', 'data-ouvrir-generateur')}
           ${bouton('📷 Scanner une salle', 'data-scanner')}
           ${estPerso(ui.salle, ui.nbJoueurs) ? bouton('Partager (QR code)', 'data-partager') : ''}
@@ -377,13 +384,7 @@ function ecranChoix(): string {
         </div>
       </section>
       ${ui.info ? `<p class="info">${echapper(ui.info)}</p>` : ''}
-      ${
-        ui.ajustement
-          ? blocAjustement(ui.ajustement)
-          : ui.nbJoueurs > 0
-            ? `<div>${bouton('✏️ Ajuster la partie (joueurs en plus ou en moins)', 'data-ajuster')}</div>`
-            : ''
-      }
+      ${ui.ajustement ? resumeAjustement(ui.ajustement) : ''}
       ${ui.nbJoueurs > 0 ? `<section class="carte"><h2>Prénoms</h2><div class="prenoms">${champsPrenoms}</div></section>` : ''}
       ${ui.erreur ? `<p class="erreur">${echapper(ui.erreur)}</p>` : ''}
       ${bouton(`Commencer la partie${nbCeSoir > 0 ? ` à ${nbCeSoir}` : ''}`, 'data-commencer', 'principal')}
@@ -791,7 +792,7 @@ function ecranPartie(): string {
 
 /** Thème de la charte : Nuit pendant les réveils et hors partie, Jour du matin à la nuit suivante. */
 function themeVoulu(): 'nuit' | 'jour' {
-  const phase = ui.generateur ? null : ui.etat?.phase.type;
+  const phase = ui.generateur || ui.modifSalle ? null : ui.etat?.phase.type;
   return phase === 'jour' || phase === 'fin' ? 'jour' : 'nuit';
 }
 
@@ -801,6 +802,8 @@ function afficher(): void {
   if (!ui.scanner) arreterScan();
   app.innerHTML = ui.generateur
     ? ecranGenerateur(ui.generateur)
+    : ui.modifSalle
+      ? ecranAjustement(ui.modifSalle)
     : ui.partage
       ? ecranPartage(ui.partage, ui.info)
     : ui.scanner
@@ -893,54 +896,21 @@ function valider(): void {
   }
 }
 
-/**
- * Clics du bloc « Ajuster la partie » sur l'écran de choix. Renvoie true si le clic le concernait.
- * Les prénoms suivent les sièges : retirer le siège 7 fait remonter les prénoms des sièges 8, 9…
- */
-function clicAjustement(d: DOMStringMap): boolean {
-  if (d.ajuster !== undefined) {
-    try {
-      ui.ajustement = nouvelAjustement(choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans()), ui.prenoms);
-    } catch (e) {
-      ui.erreur = e instanceof Error ? e.message : String(e);
-    }
-    return true;
+/** Écran « Modifier la salle » fermé avec un plan prêt : il sert pour ce soir (et peut devenir une salle). */
+function finirModifSalle(a: EtatAjustement, enregistrer: boolean): void {
+  if (enregistrer) {
+    const plan = a.plan;
+    const existe = tousLesPlans().some((p) => p.salle === plan.salle && p.nbJoueurs === plan.nbJoueurs);
+    if (existe && !confirm(`Remplacer la salle « ${plan.salle} » à ${plan.nbJoueurs} joueurs ?`)) return;
+    ajouterPlanPerso(plan);
+    ui.prenoms = a.prenoms; // ajouterPlanPerso vide les prénoms : on garde ceux déjà saisis
+    ui.ajustement = null; // la salle enregistrée est maintenant sélectionnée telle quelle
+    ui.info = `Salle « ${plan.salle} » à ${plan.nbJoueurs} joueurs enregistrée.`;
+  } else {
+    ui.prenoms = a.prenoms;
+    ui.ajustement = a;
   }
-  const a = ui.ajustement;
-  if (!a) return false;
-  ui.erreur = null;
-  try {
-    if (d.ajusterSiege !== undefined) {
-      const n = Number(d.ajusterSiege);
-      a.siegeChoisi = a.siegeChoisi === n ? null : n;
-    } else if (d.retirerSiege !== undefined) {
-      const n = Number(d.retirerSiege);
-      a.plan = retirerSiege(a.plan, n);
-      ui.prenoms.splice(n - 1, 1);
-      a.siegeChoisi = null;
-    } else if (d.ajouterSiege !== undefined) {
-      const role = app.querySelector<HTMLSelectElement>('[data-role-ajout]')?.value as RoleId | undefined;
-      a.plan = ajouterSiege(a.plan, role ?? a.roleAjout);
-      a.siegeChoisi = a.plan.nbJoueurs; // on montre le nouveau siège
-    } else if (d.annulerAjustement !== undefined) {
-      ui.prenoms = a.prenomsPrevus;
-      ui.ajustement = null;
-    } else if (d.enregistrerAjustement !== undefined) {
-      const plan = a.plan;
-      const existe = tousLesPlans().some((p) => p.salle === plan.salle && p.nbJoueurs === plan.nbJoueurs);
-      if (existe && !confirm(`Remplacer la salle « ${plan.salle} » à ${plan.nbJoueurs} joueurs ?`)) return true;
-      const prenoms = ui.prenoms;
-      ajouterPlanPerso(plan);
-      ui.prenoms = prenoms; // on garde les prénoms déjà saisis
-      ui.ajustement = null;
-      ui.info = `Salle « ${plan.salle} » à ${plan.nbJoueurs} joueurs enregistrée.`;
-    } else {
-      return false;
-    }
-  } catch (e) {
-    ui.erreur = e instanceof Error ? e.message : String(e);
-  }
-  return true;
+  ui.modifSalle = null;
 }
 
 app.addEventListener('click', (evt) => {
@@ -995,6 +965,17 @@ app.addEventListener('click', (evt) => {
     return afficher();
   }
 
+  // Modifier la salle (joueurs en plus ou en moins)
+  if (ui.modifSalle) {
+    const modif = ui.modifSalle;
+    const resultat = clicAjustement(modif, d);
+    if (resultat?.type === 'fermer') ui.modifSalle = null;
+    if (resultat?.type === 'valider' || resultat?.type === 'enregistrer') {
+      finirModifSalle(modif, resultat.type === 'enregistrer');
+    }
+    return afficher();
+  }
+
   // Générateur de salle
   if (ui.generateur) {
     const resultat = clicGenerateur(ui.generateur, d);
@@ -1016,12 +997,24 @@ app.addEventListener('click', (evt) => {
   } else if (d.salle !== undefined) {
     ui.salle = d.salle;
     ui.nbJoueurs = nombresDeJoueurs(ui.salle, tousLesPlans())[0] ?? 0;
+    if (ui.ajustement) ui.prenoms = ui.ajustement.prenomsPrevus; // autre plan : la modification est oubliée
     ui.ajustement = null;
   } else if (d.nb !== undefined) {
     ui.nbJoueurs = Number(d.nb);
+    if (ui.ajustement) ui.prenoms = ui.ajustement.prenomsPrevus; // autre plan : la modification est oubliée
     ui.ajustement = null;
-  } else if (!ui.etat && clicAjustement(d)) {
-    // Bloc « Ajuster la partie » : traité dans clicAjustement.
+  } else if (d.modifierSalle !== undefined) {
+    try {
+      // On repart de la salle déjà modifiée ce soir s'il y en a une, sinon du plan prévu.
+      ui.modifSalle = ui.ajustement
+        ? structuredClone(ui.ajustement)
+        : nouvelAjustement(choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans()), ui.prenoms);
+    } catch (e) {
+      ui.erreur = e instanceof Error ? e.message : String(e);
+    }
+  } else if (d.planPrevu !== undefined && ui.ajustement) {
+    ui.prenoms = ui.ajustement.prenomsPrevus;
+    ui.ajustement = null;
   } else if (d.commencer !== undefined) {
     try {
       const plan = ui.ajustement?.plan ?? choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans());
@@ -1110,30 +1103,11 @@ app.addEventListener('click', (evt) => {
   afficher();
 });
 
-// Générateur et ajustement : appui long sur un siège puis glisser pour le placer.
+// Générateur et « Modifier la salle » : appui long sur un siège puis glisser pour le placer.
 activerDeplacement(app, (numero, position) => {
   if (position && ui.generateur) deplacerDansGenerateur(ui.generateur, numero, position);
-  else if (position && ui.ajustement && !ui.etat) {
-    ui.ajustement.plan = deplacerSiege(ui.ajustement.plan, numero, position);
-  }
+  else if (position && ui.modifSalle) deplacerDansAjustement(ui.modifSalle, numero, position);
   afficher();
-});
-
-// Ajustement : listes déroulantes des rôles (rôle du siège touché, rôle du siège à ajouter).
-app.addEventListener('change', (evt) => {
-  const el = evt.target as HTMLSelectElement;
-  const a = ui.ajustement;
-  if (!a) return;
-  if (el.dataset.roleAjout !== undefined) a.roleAjout = el.value as RoleId;
-  if (el.dataset.ajusterRole !== undefined && a.siegeChoisi !== null) {
-    try {
-      a.plan = changerRole(a.plan, a.siegeChoisi, el.value as RoleId);
-      ui.erreur = null;
-    } catch (e) {
-      ui.erreur = e instanceof Error ? e.message : String(e);
-    }
-    afficher();
-  }
 });
 
 app.addEventListener('input', (evt) => {

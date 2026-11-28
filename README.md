@@ -42,7 +42,7 @@ src/
 │   ├── roles.ts     registre des rôles : camp, cartes, réveil, usage unique
 │   ├── plans.ts     plans de salle + validerPlan()
 │   ├── mise-en-place.ts  choix salle + nb de joueurs → plan → creerPartie()
-│   ├── ajustement.ts  ajuster le plan avant de lancer : retirer / ajouter un siège, changer un rôle
+│   ├── ajustement.ts  modifier le plan avant de lancer : retirer / ajouter un rôle ou un siège, mélanger
 │   ├── premiere-nuit.ts  reconnaissances, modèle de l'Anathème, mentor de l'Adepte
 │   ├── nuit.ts      ordre de réveil, « si en vie » / « si occupé », rôles de nuit
 │   ├── resolution-nuit.ts  morts de la nuit : attaque, protection, Sainte, Vipère
@@ -57,7 +57,8 @@ src/
     ├── main.ts      écrans : choix du plan, plan cliquable, nuit guidée, jour + vote
     ├── consignes.ts textes du MJ et saisie de chaque rôle
     ├── generateur.ts  écran « salle sur mesure »
-    ├── ajustement.ts  bloc « Ajuster la partie » de l'écran de choix
+    ├── ajustement.ts  écran « Modifier la salle » (joueurs en plus ou en moins)
+    ├── composants-salle.ts  compteurs de rôles et aperçu du plan, communs aux deux écrans
     ├── plans-demo.ts  plans de démonstration (en attendant les vrais)
     └── style.css
 tests/

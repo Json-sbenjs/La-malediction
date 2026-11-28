@@ -18,10 +18,11 @@ Règles des positions :
 - Changer la **forme** ou le **nombre de joueurs** oublie les déplacements : on repart de la disposition de la forme.
 - La correspondance entre position et écran est la même partout (`.siege` dans `style.css`, et `versPlan` dans `src/web/deplacement.ts` qui fait l'inverse).
 
-## Ajuster une salle le soir même
+## Modifier une salle le soir même
 
-Si le groupe n'a pas le nombre prévu, pas besoin de recréer une salle : écran de choix → « Ajuster la partie ».
-On retire, ajoute ou change des sièges sur le plan prévu (détail dans `deroule-partie.md`, § 1), puis on lance.
+Si le groupe n'a pas le nombre prévu, pas besoin de recréer une salle : écran de choix → « ✏️ Modifier la salle ».
+Même écran que « Salle sur mesure », mais on part du plan prévu : on règle le nombre de joueurs, puis les rôles avec − / +
+jusqu'à avoir autant de rôles que de joueurs (détail dans `deroule-partie.md`, § 1), et on valide pour ce soir.
 « Enregistrer comme salle » garde le plan ajusté (même nom, nouveau nombre de joueurs) ; s'il existe déjà, l'appli demande avant de le remplacer.
 
 ## Partager une salle (QR code)

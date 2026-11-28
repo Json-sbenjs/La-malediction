@@ -12,14 +12,16 @@ La victoire est vérifiée après chaque action du MJ qui peut tuer quelqu'un (f
 
 1. Le MJ choisit la salle et le nombre de joueurs, ce qui charge un **plan de salle** (un rôle par siège).
    Il peut aussi utiliser la **salle sur mesure** : composition conseillée, forme de la salle (tour de table, table rectangulaire, U) et tirage des rôles.
-   **Ajuster la partie** (le groupe annoncé à 15 arrive à 13 ou à 16) : bouton « Ajuster la partie » sous le choix de la salle.
-   Le MJ part du plan prévu et, avant de lancer :
-   - **retire un siège** (toucher le siège → « Retirer ce siège ») : les sièges suivants sont renumérotés (le 8 devient le 7…), gardent leur place, et les prénoms suivent ;
-   - **ajoute un siège** avec le rôle de son choix (Pèlerin par défaut) : il prend le numéro suivant, se pose à une place libre, et se déplace par appui long ;
-   - **change le rôle** d'un siège (liste déroulante ; seuls les rôles qui ont encore une carte libre sont proposés).
-   L'appli ne choisit jamais à la place du MJ quel rôle enlever ou ajouter. Elle affiche les Spectres prévus et le nombre conseillé pour ce nombre de joueurs (même calcul que la salle sur mesure).
-   Limites : 8 à 25 joueurs. Le plan ajusté peut passer par un état incomplet (ex. Trinité à 2) ; les erreurs sont affichées et la partie ne se lance qu'avec un plan valide (`validerPlan`).
-   Le plan ajusté sert pour la partie de ce soir ; « Enregistrer comme salle » le garde comme salle sur mesure (même nom, nouveau nombre de joueurs). « Revenir au plan prévu » annule tout.
+   **Modifier la salle** (le groupe annoncé à 15 arrive à 13 ou à 16) : bouton « ✏️ Modifier la salle » sur l'écran de choix.
+   L'écran ressemble à « Salle sur mesure » (mêmes compteurs et même aperçu, `src/web/composants-salle.ts`), mais part du plan prévu :
+   - **Nombre de joueurs ce soir** (− / +, de 8 à 25) ;
+   - **Rôles `total / joueurs`** : « − » retire le siège de ce rôle qui a le plus grand numéro (les sièges suivants sont renumérotés, les prénoms suivent),
+     « + » ajoute un siège de ce rôle à une place libre. La Trinité et les Doubles s'ajoutent et se retirent en entier ;
+   - **Plan** : toucher deux sièges échange leurs rôles, l'appui long déplace un siège, « Mélanger les rôles » retire les rôles sans bouger les sièges.
+   L'appli ne choisit jamais à la place du MJ quel rôle enlever ou ajouter ; elle affiche les Spectres conseillés pour ce nombre de joueurs.
+   « Valider pour ce soir » n'est possible qu'avec autant de rôles que de joueurs et un plan valide (`validerPlan`).
+   Le plan modifié sert pour la partie de ce soir ; « Enregistrer comme salle » le garde comme salle sur mesure (même nom, nouveau nombre de joueurs).
+   « Revenir au plan prévu » annule tout (prénoms compris).
 2. Prénoms des joueurs : facultatifs.
 3. Si le **Dévoué** est en jeu, le MJ montre sa carte à tout le monde.
 4. Si l'**Alpha** est une carte posée sur un siège, son porteur est Alpha d'office.
@@ -112,5 +114,5 @@ Un enrôlé ne peut jamais viser le Sectaire avec son pouvoir.
 ## Écarts encore ouverts
 
 - **FigJam à mettre à jour** (bloqué par la limite d'appels Figma du forfait Starter) : nuit d'explication rôle par rôle, ordre de la Nuit Type ci-dessus, Nécromancien confirmé (à placer après l'Envoûteur), bloc « si l'Oracle en vie » de l'Originel à renommer, Sainte qui « sauve la victime », bloc de l'Adepte (« mentor » et non « modèle »), Usurpateur avant les autres effets, successeur de l'Alpha, Sacrifié, Bourreau, vote rapide, dissolution Trinité / Doubles, Sectaire, test de victoire après la nuit, sections « architecture du code » et « planning » à jour.
-- **FigJam, aussi** : l'ajustement de la partie avant le lancement (§ 1) et le vote à main levée (§ 6).
+- **FigJam, aussi** : l'écran « Modifier la salle » avant le lancement (§ 1) et le vote à main levée (§ 6).
 - **FigJam, aussi** : la question « l'Augure a-t-elle été vue ? » (rang 57) et les morts (ils votent les jours pairs, parlent les jours impairs).

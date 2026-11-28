@@ -15,8 +15,7 @@ import {
   type Plan,
   type RoleId,
 } from '../engine';
-import { densite } from './densite';
-import { SI_PAS_D_IMAGE } from './images';
+import { ORDRE_ROLES, apercuSalle, bouton, echapper, ligneRole } from './composants-salle';
 
 export interface EtatGenerateur {
   salle: string;
@@ -45,55 +44,6 @@ export function nouveauGenerateur(): EtatGenerateur {
     siegeChoisi: null,
     erreur: null,
   };
-}
-
-/** Ordre d'affichage des rôles dans l'éditeur de composition. */
-const ORDRE_ROLES: RoleId[] = [
-  'spectre', 'pelerin', 'oracle', 'protecteur', 'sainte', 'courtisane', 'instinct', 'vipere',
-  'main-noire', 'anatheme', 'adepte', 'usurpateur', 'trinite', 'alpha',
-  'devoue', 'augure', 'inquisiteur', 'medium', 'enchanteur', 'sacrifie', 'bourreau', 'doubles',
-  'originel', 'maudit', 'sectaire', 'envouteur', 'necromancien',
-];
-
-function echapper(texte: string): string {
-  return texte.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-}
-
-function bouton(texte: string, attrs: string, classe = ''): string {
-  return `<button type="button" class="${classe}" ${attrs}>${texte}</button>`;
-}
-
-function ligneRole(g: EtatGenerateur, role: RoleId): string {
-  const def = ROLES[role];
-  const n = g.composition[role] ?? 0;
-  // La Trinité va par 3 et les Doubles par 2 : le groupe entier ou rien.
-  const pas = role === 'trinite' || role === 'doubles' ? def.cartes : 1;
-  return `
-    <li class="ligne-role camp-${def.camp}">
-      <img class="vignette" src="${import.meta.env.BASE_URL}roles/${role}.webp" alt="" ${SI_PAS_D_IMAGE}>
-      <span class="nom-role">${echapper(def.nom)}</span>
-      <span class="compteur">
-        ${bouton('−', `data-gen-moins="${role}" data-pas="${pas}" ${n === 0 ? 'disabled' : ''}`, 'rond')}
-        <strong>${n}</strong>
-        ${bouton('+', `data-gen-plus="${role}" data-pas="${pas}" ${n + pas > def.cartes ? 'disabled' : ''}`, 'rond')}
-      </span>
-      <span class="max">/ ${def.cartes}</span>
-    </li>`;
-}
-
-function apercu(plan: Plan, choisi: number | null): string {
-  const sieges = plan.sieges
-    .map(
-      (s) => `
-      <button type="button" class="siege actif camp-${ROLES[s.role].camp} ${choisi === s.numero ? 'choisi' : ''}"
-        data-gen-siege="${s.numero}" data-deplacable="${s.numero}" style="--x:${s.position.x};--y:${s.position.y}">
-        <img class="vignette" src="${import.meta.env.BASE_URL}roles/${s.role}.webp" alt="" draggable="false" ${SI_PAS_D_IMAGE}>
-        <span class="num">${s.numero}</span>
-        <span class="role">${echapper(ROLES[s.role].nom)}</span>
-      </button>`,
-    )
-    .join('');
-  return `<section class="salle ${densite(plan.nbJoueurs)}" aria-label="Aperçu de la salle">${sieges}</section>`;
 }
 
 export function ecranGenerateur(g: EtatGenerateur): string {
@@ -127,7 +77,11 @@ export function ecranGenerateur(g: EtatGenerateur): string {
 
       <section class="carte">
         <h2>Rôles <span class="${juste ? 'ok' : 'attention'}">${total} / ${g.nbJoueurs}</span></h2>
-        <ul class="roles">${ORDRE_ROLES.map((r) => ligneRole(g, r)).join('')}</ul>
+        <ul class="roles">${ORDRE_ROLES.map((r) => {
+          const n = g.composition[r] ?? 0;
+          const pas = r === 'trinite' || r === 'doubles' ? ROLES[r].cartes : 1;
+          return ligneRole('gen', r, n, n + pas <= ROLES[r].cartes);
+        }).join('')}</ul>
         ${bouton('Composition conseillée', 'data-gen-conseil')}
       </section>
 
@@ -138,7 +92,7 @@ export function ecranGenerateur(g: EtatGenerateur): string {
         ${
           g.plan
             ? `<p>Touche deux sièges pour échanger leurs rôles. Reste appuyé sur un siège pour le déplacer et le placer comme dans la vraie salle.</p>
-               ${apercu(g.plan, g.siegeChoisi)}`
+               ${apercuSalle('gen', g.plan, g.siegeChoisi)}`
             : ''
         }
       </section>
