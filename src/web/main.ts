@@ -5,7 +5,12 @@ import {
   ROLES,
   appliquer,
   choisirPlan,
+  compterMainsLevees,
   compterVotes,
+  ajouterSiege,
+  changerRole,
+  deplacerSiege,
+  retirerSiege,
   mortsVotent,
   creerPartie,
   etapeSuivante,
@@ -35,6 +40,7 @@ import {
   type EtatGenerateur,
 } from './generateur';
 import { activerDeplacement, clicApresDeplacement } from './deplacement';
+import { blocAjustement, nouvelAjustement, type EtatAjustement } from './ajustement';
 import { densite } from './densite';
 import { SI_PAS_D_IMAGE } from './images';
 import { arreterScan, demarrerScan, ecranPartage, ecranScanner, lienDePartage } from './partage';
@@ -68,9 +74,13 @@ function ecrirePlansPerso(): void {
   }
 }
 
-/** Plans saisis dans le code (ou de démo s'il n'y en a pas), puis les salles sur mesure. */
+/**
+ * Plans saisis dans le code (ou de démo s'il n'y en a pas), puis les salles sur mesure.
+ * Une salle sur mesure enregistrée sous le même nom et le même nombre de joueurs remplace le plan du code.
+ */
 function tousLesPlans(): Plan[] {
-  return [...(PLANS.length > 0 ? PLANS : PLANS_DEMO), ...plansPerso];
+  const code = (PLANS.length > 0 ? PLANS : PLANS_DEMO).filter((p) => !estPerso(p.salle, p.nbJoueurs));
+  return [...code, ...plansPerso];
 }
 
 function estPerso(salle: string, nb: number): boolean {
@@ -130,6 +140,16 @@ interface Ui {
   cameraEnPanne: boolean;
   /** Message de réussite sur l'écran de choix ou de partage (salle ajoutée, lien copié). */
   info: string | null;
+  /** Plan retouché pour ce soir (joueurs en plus ou en moins), null = plan prévu tel quel. */
+  ajustement: EtatAjustement | null;
+  /** Saisie du vote : à main levée (nombre de mains par joueur) ou voix par voix (qui vote contre qui). */
+  modeVote: 'mains' | 'voix';
+  /** Vote à main levée : nombre de mains levées contre chaque joueur. */
+  mains: Record<JoueurId, number>;
+  /** Vote à main levée : joueur contre qui l'Alpha a levé la main (sa voix compte double). */
+  voteAlpha: JoueurId | null;
+  /** Vote à main levée : joueur touché, dont on saisit les mains. */
+  cibleMains: JoueurId | null;
 }
 
 const ui: Ui = {
@@ -142,6 +162,11 @@ const ui: Ui = {
   scanner: false,
   cameraEnPanne: false,
   info: null,
+  ajustement: null,
+  modeVote: 'mains',
+  mains: {},
+  voteAlpha: null,
+  cibleMains: null,
   salle: sallesDisponibles(tousLesPlans())[0] ?? '',
   nbJoueurs: 0,
   prenoms: [],
@@ -181,6 +206,9 @@ function viderSaisie(): void {
   ui.selection = [];
   ui.votes = {};
   ui.votant = null;
+  ui.mains = {};
+  ui.voteAlpha = null;
+  ui.cibleMains = null;
   ui.erreur = null;
 }
 
@@ -297,6 +325,7 @@ function siegesActifs(etape: Etape): JoueurId[] {
     case 'election-alpha':
       return etape.candidats;
     case 'vote':
+      if (ui.modeVote === 'mains') return etape.ciblesPossibles;
       return ui.votant === null ? etape.votants : etape.ciblesPossibles;
     default:
       return [];
@@ -317,7 +346,8 @@ function ecranChoix(): string {
   const plans = tousLesPlans();
   const salles = sallesDisponibles(plans);
   const nombres = nombresDeJoueurs(ui.salle, plans);
-  const champsPrenoms = Array.from({ length: ui.nbJoueurs }, (_, i) => {
+  const nbCeSoir = ui.ajustement?.plan.nbJoueurs ?? ui.nbJoueurs;
+  const champsPrenoms = Array.from({ length: nbCeSoir }, (_, i) => {
     const valeur = echapper(ui.prenoms[i] ?? '');
     return `<label class="prenom"><span>${i + 1}</span><input data-prenom="${i}" value="${valeur}" placeholder="Prénom (facultatif)" autocomplete="off"></label>`;
   }).join('');
@@ -347,9 +377,16 @@ function ecranChoix(): string {
         </div>
       </section>
       ${ui.info ? `<p class="info">${echapper(ui.info)}</p>` : ''}
+      ${
+        ui.ajustement
+          ? blocAjustement(ui.ajustement)
+          : ui.nbJoueurs > 0
+            ? `<div>${bouton('✏️ Ajuster la partie (joueurs en plus ou en moins)', 'data-ajuster')}</div>`
+            : ''
+      }
       ${ui.nbJoueurs > 0 ? `<section class="carte"><h2>Prénoms</h2><div class="prenoms">${champsPrenoms}</div></section>` : ''}
       ${ui.erreur ? `<p class="erreur">${echapper(ui.erreur)}</p>` : ''}
-      ${bouton('Commencer la partie', 'data-commencer', 'principal')}
+      ${bouton(`Commencer la partie${nbCeSoir > 0 ? ` à ${nbCeSoir}` : ''}`, 'data-commencer', 'principal')}
     </main>`;
 }
 
@@ -364,7 +401,7 @@ function siege(j: Joueur, etape: Etape, actifs: JoueurId[], compte: Record<Joueu
     `camp-${j.camp}`,
     j.vivant ? '' : 'mort',
     actifs.includes(j.id) ? 'actif' : '',
-    ui.selection.includes(j.id) || ui.votant === j.id ? 'choisi' : '',
+    ui.selection.includes(j.id) || ui.votant === j.id || ui.cibleMains === j.id ? 'choisi' : '',
     acteur ? 'acteur' : '',
   ].join(' ');
   const badges = [
@@ -393,6 +430,77 @@ function siege(j: Joueur, etape: Etape, actifs: JoueurId[], compte: Record<Joueu
       ${infoVote}
     </button>`;
 }
+
+function nbVotesSaisis(): number {
+  return Object.values(ui.votes).filter((v) => v !== null).length;
+}
+
+function totalMains(): number {
+  return Object.values(ui.mains).reduce((total, n) => total + n, 0);
+}
+
+/** Vote voix par voix : toucher un votant, puis le joueur qu'il vise. */
+function saisieVoixParVoix(): string {
+  return `
+    <p class="consigne">Touche un votant, puis le joueur qu'il vise. La voix de l'Alpha 👑 compte double.</p>
+    <p>${
+      ui.votant === null
+        ? 'Touche un votant, ou directement le joueur à éliminer.'
+        : `${nom(ui.votant)} vote contre… (touche-le à nouveau pour annuler)`
+    }</p>
+    ${
+      ui.votant === null
+        ? ''
+        : `<div class="raccourci">
+             <p>Vote rapide : pas besoin de saisir les voix.</p>
+             ${bouton(`Éliminer directement ${nom(ui.votant)}`, `data-eliminer="${ui.votant}"`)}
+           </div>`
+    }`;
+}
+
+/** Nombres proposés d'un seul toucher pour les mains levées contre un joueur. */
+const MAINS_RAPIDES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+/** Vote à main levée : toucher un joueur, puis dire combien de mains se lèvent contre lui. */
+function saisieMainsLevees(etape: Extract<Etape, { type: 'vote' }>): string {
+  const nbVotants = etape.votants.length;
+  const total = totalMains();
+  const cible = ui.cibleMains;
+  const alpha = etape.alpha;
+  let saisie = '<p>Touche le joueur visé sur le plan, puis le nombre de mains levées contre lui.</p>';
+  if (cible !== null) {
+    const n = ui.mains[cible] ?? 0;
+    const plein = total >= nbVotants;
+    saisie = `
+      <div class="mains">
+        <p>Mains levées contre <strong>${nom(cible)}</strong> :</p>
+        <div class="compteur grand">
+          ${bouton('−', `data-mains-pas="-1" aria-label="Une main de moins" ${n === 0 ? 'disabled' : ''}`, 'rond')}
+          <strong>${n}</strong>
+          ${bouton('+', `data-mains-pas="1" aria-label="Une main de plus" ${plein ? 'disabled' : ''}`, 'rond')}
+        </div>
+        <div class="choix-ligne nombres">${MAINS_RAPIDES.filter((k) => k <= nbVotants)
+          .map((k) => bouton(String(k), `data-mains="${k}" ${k - n > nbVotants - total ? 'disabled' : ''}`, k === n ? 'actif' : ''))
+          .join('')}</div>
+        ${bouton(
+          `👑 L'Alpha (${nom(alpha)}) a levé la main contre ${nom(cible)}`,
+          `data-vote-alpha="${cible}" aria-pressed="${ui.voteAlpha === cible}" ${n === 0 ? 'disabled' : ''}`,
+          ui.voteAlpha === cible ? 'actif' : '',
+        )}
+        <div class="raccourci">
+          <p>Vote rapide : pas besoin de compter.</p>
+          ${bouton(`Éliminer directement ${nom(cible)}`, `data-eliminer="${cible}"`)}
+        </div>
+      </div>`;
+  }
+  return `
+    <p class="consigne">Compte les mains levées contre chaque joueur. La voix de l'Alpha 👑 compte double : dis contre qui il a levé la main.</p>
+    ${saisie}
+    <p class="max">Mains comptées : ${total} sur ${nbVotants} votants.</p>`;
+}
+
+/** Erreur de saisie du vote en cours (trop de mains…), affichée sans bloquer l'écran. */
+let erreurVote: string | null = null;
 
 function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
   const etat = ui.etat!;
@@ -560,14 +668,11 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
         </div>`;
 
     case 'vote': {
-      const nbVotes = Object.values(ui.votes).filter((v) => v !== null).length;
       const classement = Object.entries(compte)
         .sort((a, b) => b[1] - a[1])
         .map(([id, n]) => `<li>${nom(Number(id))} : ${n} voix</li>`)
         .join('');
-      return `
-        <h2>Vote du village</h2>
-        <p class="consigne">Touche un votant, puis le joueur qu'il vise. La voix de l'Alpha 👑 compte double.</p>
+      const rappels = `
         ${
           etat.marque !== null && etat.joueurs.some((j) => j.id === etat.marque && j.vivant)
             ? `<p>🪶 Marque de l'Inquisiteur : ${nom(etat.marque)} part avec une voix contre lui.</p>`
@@ -577,30 +682,42 @@ function panneau(etape: Etape, compte: Record<JoueurId, number>): string {
           !etat.joueurs.some((j) => !j.vivant)
             ? ''
             : mortsVotent(etape.numero)
-              ? '<p>🕯️ Jour pair : les morts votent aussi (1 voix chacun), touche-les comme les vivants.</p>'
+              ? `<p>🕯️ Jour pair : les morts votent aussi (1 voix chacun)${
+                  ui.modeVote === 'mains' ? ', compte leurs mains' : ', touche-les comme les vivants'
+                }.</p>`
               : '<p>🕯️ Jour impair : les morts peuvent parler, mais ne votent pas.</p>'
         }
         ${
           etat.joueurs.some((j) => j.vivant && j.statuts.enrole)
             ? '<p>⛓️ Les enrôlés doivent voter comme le Sectaire.</p>'
             : ''
-        }
-        <p>${
-          ui.votant === null
-            ? 'Touche un votant, ou directement le joueur à éliminer.'
-            : `${nom(ui.votant)} vote contre… (touche-le à nouveau pour annuler)`
-        }</p>
+        }`;
+      const modes = `
+        <div class="choix-ligne" role="group" aria-label="Façon de saisir le vote">
+          ${bouton('✋ Main levée', 'data-mode-vote="mains"', ui.modeVote === 'mains' ? 'actif' : '')}
+          ${bouton('👆 Voix par voix', 'data-mode-vote="voix"', ui.modeVote === 'voix' ? 'actif' : '')}
+        </div>`;
+      return `
+        <h2>Vote du village</h2>
+        ${modes}
+        ${ui.modeVote === 'mains' ? saisieMainsLevees(etape) : saisieVoixParVoix()}
+        ${rappels}
         ${classement ? `<ul class="classement">${classement}</ul>` : ''}
-        ${
-          ui.votant === null
-            ? ''
-            : `<div class="raccourci">
-                 <p>Vote rapide : pas besoin de saisir les voix.</p>
-                 ${bouton(`Éliminer directement ${nom(ui.votant)}`, `data-eliminer="${ui.votant}"`)}
-               </div>`
-        }
+        ${erreurVote ? `<p class="attention">${echapper(erreurVote)}</p>` : ''}
         <div class="boutons">
-          ${bouton(`Valider le vote (${nbVotes})`, `data-voter ${nbVotes === 0 ? 'disabled' : ''}`, 'principal')}
+          ${
+            ui.modeVote === 'mains'
+              ? bouton(
+                  `Valider le vote (${totalMains()} mains)`,
+                  `data-voter-mains ${totalMains() === 0 || erreurVote ? 'disabled' : ''}`,
+                  'principal',
+                )
+              : bouton(
+                  `Valider le vote (${nbVotesSaisis()})`,
+                  `data-voter ${nbVotesSaisis() === 0 ? 'disabled' : ''}`,
+                  'principal',
+                )
+          }
           ${bouton('Personne n\'est éliminé', 'data-passer')}
         </div>`;
     }
@@ -638,11 +755,16 @@ function ecranPartie(): string {
   const etape = etapeSuivante(etat);
   const actifs = siegesActifs(etape);
   let compte: Record<JoueurId, number> = {};
+  erreurVote = null;
   if (etape.type === 'vote') {
     try {
-      compte = compterVotes(etat, ui.votes).compte;
-    } catch {
-      // Votes incomplets : on n'affiche pas de compte.
+      compte =
+        ui.modeVote === 'mains'
+          ? compterMainsLevees(etat, ui.mains, ui.voteAlpha).compte
+          : compterVotes(etat, ui.votes).compte;
+    } catch (e) {
+      // Saisie incomplète ou impossible : pas de compte, on dit pourquoi (vote à main levée).
+      if (ui.modeVote === 'mains') erreurVote = e instanceof Error ? e.message : String(e);
     }
   }
 
@@ -723,6 +845,11 @@ function afficher(): void {
 
 function toucherSiege(id: JoueurId): void {
   const etape = etapeSuivante(ui.etat!);
+  if (etape.type === 'vote' && ui.modeVote === 'mains') {
+    if (!etape.ciblesPossibles.includes(id)) return;
+    ui.cibleMains = ui.cibleMains === id ? null : id;
+    return;
+  }
   if (etape.type === 'vote') {
     if (ui.votant === null) {
       if (!etape.votants.includes(id)) return;
@@ -764,6 +891,56 @@ function valider(): void {
       jouer({ type: 'elire-alpha', cible });
       return;
   }
+}
+
+/**
+ * Clics du bloc « Ajuster la partie » sur l'écran de choix. Renvoie true si le clic le concernait.
+ * Les prénoms suivent les sièges : retirer le siège 7 fait remonter les prénoms des sièges 8, 9…
+ */
+function clicAjustement(d: DOMStringMap): boolean {
+  if (d.ajuster !== undefined) {
+    try {
+      ui.ajustement = nouvelAjustement(choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans()), ui.prenoms);
+    } catch (e) {
+      ui.erreur = e instanceof Error ? e.message : String(e);
+    }
+    return true;
+  }
+  const a = ui.ajustement;
+  if (!a) return false;
+  ui.erreur = null;
+  try {
+    if (d.ajusterSiege !== undefined) {
+      const n = Number(d.ajusterSiege);
+      a.siegeChoisi = a.siegeChoisi === n ? null : n;
+    } else if (d.retirerSiege !== undefined) {
+      const n = Number(d.retirerSiege);
+      a.plan = retirerSiege(a.plan, n);
+      ui.prenoms.splice(n - 1, 1);
+      a.siegeChoisi = null;
+    } else if (d.ajouterSiege !== undefined) {
+      const role = app.querySelector<HTMLSelectElement>('[data-role-ajout]')?.value as RoleId | undefined;
+      a.plan = ajouterSiege(a.plan, role ?? a.roleAjout);
+      a.siegeChoisi = a.plan.nbJoueurs; // on montre le nouveau siège
+    } else if (d.annulerAjustement !== undefined) {
+      ui.prenoms = a.prenomsPrevus;
+      ui.ajustement = null;
+    } else if (d.enregistrerAjustement !== undefined) {
+      const plan = a.plan;
+      const existe = tousLesPlans().some((p) => p.salle === plan.salle && p.nbJoueurs === plan.nbJoueurs);
+      if (existe && !confirm(`Remplacer la salle « ${plan.salle} » à ${plan.nbJoueurs} joueurs ?`)) return true;
+      const prenoms = ui.prenoms;
+      ajouterPlanPerso(plan);
+      ui.prenoms = prenoms; // on garde les prénoms déjà saisis
+      ui.ajustement = null;
+      ui.info = `Salle « ${plan.salle} » à ${plan.nbJoueurs} joueurs enregistrée.`;
+    } else {
+      return false;
+    }
+  } catch (e) {
+    ui.erreur = e instanceof Error ? e.message : String(e);
+  }
+  return true;
 }
 
 app.addEventListener('click', (evt) => {
@@ -839,15 +1016,20 @@ app.addEventListener('click', (evt) => {
   } else if (d.salle !== undefined) {
     ui.salle = d.salle;
     ui.nbJoueurs = nombresDeJoueurs(ui.salle, tousLesPlans())[0] ?? 0;
+    ui.ajustement = null;
   } else if (d.nb !== undefined) {
     ui.nbJoueurs = Number(d.nb);
+    ui.ajustement = null;
+  } else if (!ui.etat && clicAjustement(d)) {
+    // Bloc « Ajuster la partie » : traité dans clicAjustement.
   } else if (d.commencer !== undefined) {
     try {
-      const plan = choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans());
+      const plan = ui.ajustement?.plan ?? choisirPlan(ui.salle, ui.nbJoueurs, tousLesPlans());
       const prenoms = Array.from({ length: plan.nbJoueurs }, (_, i) => ui.prenoms[i] || null);
       ui.etat = creerPartie(plan, prenoms);
       ui.plan = plan;
       ui.historique = [];
+      ui.ajustement = null;
       viderSaisie();
       sauvegarder();
       void garderEcranAllume();
@@ -895,6 +1077,22 @@ app.addEventListener('click', (evt) => {
     return jouer({ type: 'eliminer', cible: Number(d.eliminer) });
   } else if (d.voter !== undefined) {
     return jouer({ type: 'vote', votes: ui.votes });
+  } else if (d.voterMains !== undefined) {
+    return jouer({ type: 'vote-main-levee', mains: ui.mains, voteAlpha: ui.voteAlpha });
+  } else if (d.modeVote !== undefined) {
+    // Changer de façon de saisir repart d'une saisie vide (les deux ne se mélangent pas).
+    ui.modeVote = d.modeVote === 'voix' ? 'voix' : 'mains';
+    viderSaisie();
+  } else if ((d.mains !== undefined || d.mainsPas !== undefined) && ui.cibleMains !== null) {
+    const cible = ui.cibleMains;
+    const avant = ui.mains[cible] ?? 0;
+    const n = Math.max(0, d.mains !== undefined ? Number(d.mains) : avant + Number(d.mainsPas));
+    ui.mains = { ...ui.mains, [cible]: n };
+    if (n === 0) delete ui.mains[cible];
+    if (n === 0 && ui.voteAlpha === cible) ui.voteAlpha = null;
+  } else if (d.voteAlpha !== undefined) {
+    const cible = Number(d.voteAlpha);
+    ui.voteAlpha = ui.voteAlpha === cible ? null : cible;
   } else if (d.quitter !== undefined) {
     if (!confirm('Abandonner la partie en cours ?')) return;
     ui.etat = null;
@@ -912,10 +1110,30 @@ app.addEventListener('click', (evt) => {
   afficher();
 });
 
-// Générateur : appui long sur un siège puis glisser pour le placer.
+// Générateur et ajustement : appui long sur un siège puis glisser pour le placer.
 activerDeplacement(app, (numero, position) => {
-  if (ui.generateur && position) deplacerDansGenerateur(ui.generateur, numero, position);
+  if (position && ui.generateur) deplacerDansGenerateur(ui.generateur, numero, position);
+  else if (position && ui.ajustement && !ui.etat) {
+    ui.ajustement.plan = deplacerSiege(ui.ajustement.plan, numero, position);
+  }
   afficher();
+});
+
+// Ajustement : listes déroulantes des rôles (rôle du siège touché, rôle du siège à ajouter).
+app.addEventListener('change', (evt) => {
+  const el = evt.target as HTMLSelectElement;
+  const a = ui.ajustement;
+  if (!a) return;
+  if (el.dataset.roleAjout !== undefined) a.roleAjout = el.value as RoleId;
+  if (el.dataset.ajusterRole !== undefined && a.siegeChoisi !== null) {
+    try {
+      a.plan = changerRole(a.plan, a.siegeChoisi, el.value as RoleId);
+      ui.erreur = null;
+    } catch (e) {
+      ui.erreur = e instanceof Error ? e.message : String(e);
+    }
+    afficher();
+  }
 });
 
 app.addEventListener('input', (evt) => {

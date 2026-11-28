@@ -449,3 +449,20 @@ button.rond { width: 48px; padding: 0; font-size: 22px; }
   cursor: grabbing;
   box-shadow: 0 0 0 3px var(--or-vif), var(--ombre-carte);
 }
+
+/* ── Ajuster la partie avant de lancer (joueurs en plus ou en moins) ── */
+.ajustement h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--espace-2); }
+.ajustement ul.attention { margin: 0; padding-left: 1.2rem; }
+.outils-siege { display: flex; flex-wrap: wrap; align-items: center; gap: var(--espace-2); }
+.outils-siege select.champ { flex: 1 1 200px; min-height: 48px; }
+
+/* ── Vote à main levée ───────────────────────────── */
+.mains {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-2);
+}
+.mains .compteur strong { font-size: 30px; min-width: 3ch; }
+/* Un nombre de mains d'un seul toucher : boutons carrés, assez grands pour le doigt. */
+.nombres button { min-width: 48px; padding: 0 var(--espace-2); font-variant-numeric: tabular-nums; }

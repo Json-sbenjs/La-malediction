@@ -86,7 +86,7 @@ function apercu(plan: Plan, choisi: number | null): string {
     .map(
       (s) => `
       <button type="button" class="siege actif camp-${ROLES[s.role].camp} ${choisi === s.numero ? 'choisi' : ''}"
-        data-gen-siege="${s.numero}" data-deplacable style="--x:${s.position.x};--y:${s.position.y}">
+        data-gen-siege="${s.numero}" data-deplacable="${s.numero}" style="--x:${s.position.x};--y:${s.position.y}">
         <img class="vignette" src="${import.meta.env.BASE_URL}roles/${s.role}.webp" alt="" draggable="false" ${SI_PAS_D_IMAGE}>
         <span class="num">${s.numero}</span>
         <span class="role">${echapper(ROLES[s.role].nom)}</span>

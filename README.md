@@ -42,11 +42,12 @@ src/
 │   ├── roles.ts     registre des rôles : camp, cartes, réveil, usage unique
 │   ├── plans.ts     plans de salle + validerPlan()
 │   ├── mise-en-place.ts  choix salle + nb de joueurs → plan → creerPartie()
+│   ├── ajustement.ts  ajuster le plan avant de lancer : retirer / ajouter un siège, changer un rôle
 │   ├── premiere-nuit.ts  reconnaissances, modèle de l'Anathème, mentor de l'Adepte
 │   ├── nuit.ts      ordre de réveil, « si en vie » / « si occupé », rôles de nuit
 │   ├── resolution-nuit.ts  morts de la nuit : attaque, protection, Sainte, Vipère
 │   ├── mort.ts      effets à la mort : Main Noire, Anathème, Adepte, Usurpateur, Alpha, Trinité
-│   ├── vote.ts      élection de l'Alpha, vote du village (Alpha ×2)
+│   ├── vote.ts      élection de l'Alpha, vote du village (Alpha ×2), voix par voix ou à main levée
 │   ├── victoire.ts  conditions de victoire
 │   ├── generateur.ts  salle sur mesure : composition conseillée, formes, tirage des rôles
 │   ├── historique.ts  annuler la dernière action (états précédents gardés)
@@ -56,6 +57,7 @@ src/
     ├── main.ts      écrans : choix du plan, plan cliquable, nuit guidée, jour + vote
     ├── consignes.ts textes du MJ et saisie de chaque rôle
     ├── generateur.ts  écran « salle sur mesure »
+    ├── ajustement.ts  bloc « Ajuster la partie » de l'écran de choix
     ├── plans-demo.ts  plans de démonstration (en attendant les vrais)
     └── style.css
 tests/
@@ -63,10 +65,10 @@ tests/
     ├── aides.ts         outils partagés (planDeTest, jouerNuit, finirNuit…)
     ├── roles.test.ts, plans.test.ts, mise-en-place.test.ts
     ├── nuit.test.ts, resolution-nuit.test.ts, mort.test.ts
-    ├── vote.test.ts, victoire.test.ts, premiere-nuit.test.ts, trinite.test.ts
+    ├── vote.test.ts, vote-main-levee.test.ts, victoire.test.ts, premiere-nuit.test.ts, trinite.test.ts
     ├── nouveaux-roles.test.ts   les 14 rôles ajoutés après la deadline
     ├── historique.test.ts   annuler la dernière action
-    ├── plans-demo.test.ts, generateur.test.ts
+    ├── plans-demo.test.ts, generateur.test.ts, ajustement.test.ts
     ├── partie-complete.test.ts   ★ jalon : une partie du début à la victoire
     └── purete.test.ts   vérifie que le moteur reste pur
 public/              manifeste, service worker (hors ligne), icônes

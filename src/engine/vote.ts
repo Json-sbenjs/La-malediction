@@ -76,6 +76,50 @@ export function compterVotes(etat: EtatPartie, votes: Record<JoueurId, JoueurId 
   return { compte, elimine: max > 0 && enTete.length === 1 ? enTete[0] : null };
 }
 
+/**
+ * Vote à main levée : le MJ compte les mains levées contre chaque joueur et les saisit d'un coup
+ * (`mains[cible] = nombre de mains`), au lieu de dire qui a voté pour qui.
+ * - L'Alpha lève la main comme les autres (sa main est dans le compte) ; `voteAlpha` dit contre qui :
+ *   on y ajoute 1 voix pour que sa voix compte double.
+ * - Le joueur marqué par l'Inquisiteur part avec une voix (comme au vote voix par voix).
+ * - Il ne peut pas y avoir plus de mains que de votants (les morts comptent les jours pairs).
+ * Égalité en tête → personne n'est éliminé.
+ */
+export function compterMainsLevees(
+  etat: EtatPartie,
+  mains: Record<JoueurId, number>,
+  voteAlpha: JoueurId | null,
+): ResultatVote {
+  const ids = vivants(etat).map((j) => j.id);
+  const votants = votantsDuJour(etat);
+  const compte: Record<JoueurId, number> = {};
+  if (etat.marque !== null && ids.includes(etat.marque)) compte[etat.marque] = 1;
+
+  let total = 0;
+  for (const [cle, nombre] of Object.entries(mains)) {
+    const cible = Number(cle);
+    if (!Number.isInteger(nombre) || nombre < 0) throw new Error(`Nombre de mains invalide contre le siège ${cible}`);
+    if (nombre === 0) continue;
+    verifierCible(ids, cible, 'Le village');
+    compte[cible] = (compte[cible] ?? 0) + nombre;
+    total += nombre;
+  }
+  if (total > votants.length) {
+    throw new Error(`${total} mains levées pour ${votants.length} votants`);
+  }
+  if (voteAlpha !== null) {
+    if (alphaVivant(etat) === null) throw new Error("Il n'y a pas d'Alpha en vie");
+    if (!(mains[voteAlpha] > 0)) throw new Error("L'Alpha a levé la main : compte-la contre ce joueur");
+    compte[voteAlpha] += 1;
+  }
+
+  const max = Math.max(0, ...Object.values(compte));
+  const enTete = Object.keys(compte)
+    .map(Number)
+    .filter((id) => compte[id] === max);
+  return { compte, elimine: max > 0 && enTete.length === 1 ? enTete[0] : null };
+}
+
 export function appliquerJour(etat: EtatPartie, phase: PhaseJour, action: Action): EtatPartie {
   const etape = etapeJour(etat, phase);
 
@@ -96,6 +140,9 @@ export function appliquerJour(etat: EtatPartie, phase: PhaseJour, action: Action
   switch (action.type) {
     case 'vote':
       elimine = compterVotes(etat, action.votes).elimine;
+      break;
+    case 'vote-main-levee':
+      elimine = compterMainsLevees(etat, action.mains, action.voteAlpha).elimine;
       break;
     case 'eliminer':
       verifierCible(
